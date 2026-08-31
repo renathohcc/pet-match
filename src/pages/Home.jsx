@@ -1,10 +1,10 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import { FeaturePetCard } from '../components/PetCard'
-import { mockPets } from '../data/mockPets'
+import { listAvailablePets } from '../lib/pets'
 
-const featured = mockPets.slice(0, 6)
 const featurePlacement = [
   'col-span-2 row-span-2',
   'col-span-2',
@@ -15,6 +15,18 @@ const featurePlacement = [
 ]
 
 function Home() {
+  const [featured, setFeatured] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    listAvailablePets().then((pets) => {
+      if (!cancelled) setFeatured(pets.slice(0, 6))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <>
       <section className="mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-8.5 px-7 pb-15 pt-2.5 md:grid-cols-[1.05fr_0.95fr] md:gap-14">

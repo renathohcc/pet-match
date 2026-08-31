@@ -1,12 +1,53 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
-import { getPetById } from '../data/mockPets'
+import { getPetById } from '../lib/pets'
 
 function PetDetail() {
   const { id } = useParams()
-  const pet = getPetById(id)
+  const [pet, setPet] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading ao trocar de pet
+    setLoading(true)
+    setError(null)
+
+    getPetById(id)
+      .then((result) => {
+        if (!cancelled) setPet(result)
+      })
+      .catch(() => {
+        if (!cancelled) setError('Não foi possível carregar esse pet agora. Tente novamente em instantes.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (loading) {
+    return (
+      <Container>
+        <div className="py-16 text-center text-ink-soft">Carregando...</div>
+      </Container>
+    )
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <div className="py-16 text-center text-terracotta">{error}</div>
+      </Container>
+    )
+  }
 
   if (!pet) {
     return (
@@ -34,7 +75,7 @@ function PetDetail() {
             <div className="row-span-2 aspect-[1/1.05] overflow-hidden rounded-2xl">
               <img src={pet.image} alt={pet.name} className="h-full w-full object-cover" />
             </div>
-            {pet.thumbs.map((thumb) => (
+            {(pet.thumbs ?? []).map((thumb) => (
               <div key={thumb} className="aspect-square overflow-hidden rounded-xl">
                 <img src={thumb} alt="" className="h-full w-full object-cover" />
               </div>
@@ -71,7 +112,7 @@ function PetDetail() {
           <div className="mt-7.5">
             <h3 className="mb-3 text-[19px] text-blue-deep">Saúde e cuidados</h3>
             <div className="grid max-w-[420px] grid-cols-1 gap-2.5 sm:grid-cols-2">
-              {pet.health.map((item) => (
+              {(pet.health ?? []).map((item) => (
                 <div key={item} className="flex items-center gap-2.5 text-[14.5px] text-ink">
                   <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-green text-xs text-white">✓</span>
                   {item}
@@ -83,7 +124,7 @@ function PetDetail() {
           <div className="mt-7.5">
             <h3 className="mb-3 text-[19px] text-blue-deep">Temperamento</h3>
             <div className="flex flex-wrap gap-2">
-              {pet.temperament.map((tag) => (
+              {(pet.temperament ?? []).map((tag) => (
                 <span key={tag} className="rounded-full border border-line bg-cream-2 px-3.5 py-1.5 text-[13.5px] font-semibold text-blue-deep">
                   {tag}
                 </span>

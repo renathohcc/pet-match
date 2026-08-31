@@ -1,22 +1,54 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Container from '../components/Container'
 import Chip from '../components/Chip'
 import { GridPetCard } from '../components/PetCard'
-import { mockPets } from '../data/mockPets'
+import { listAvailablePets } from '../lib/pets'
 
-const filterGroups = [
-  { label: 'Espécie', options: ['🐶 Cães', '🐱 Gatos'] },
-  { label: 'Porte', options: ['Pequeno', 'Médio', 'Grande'] },
-  { label: 'Idade', options: ['Filhote', 'Adulto', 'Idoso'] },
-  { label: 'Sexo', options: ['Macho', 'Fêmea'] },
-  { label: 'Temperamento', options: ['Dócil', 'Brincalhão', 'Calmo', 'Independente'] },
+const speciesOptions = [
+  { label: '🐶 Cães', value: 'cão' },
+  { label: '🐱 Gatos', value: 'gato' },
 ]
+const sizeOptions = ['Pequeno', 'Médio', 'Grande']
+const sexOptions = ['Macho', 'Fêmea']
+// TODO (v1.1): idade/temperamento exigem normalizar o schema dos pets antes de
+// virar filtro de query real — por enquanto ficam só como recorte visual do mockup.
+const ageOptions = ['Filhote', 'Adulto', 'Idoso']
+const temperamentOptions = ['Dócil', 'Brincalhão', 'Calmo', 'Independente']
 
 function Buscar() {
-  const [active, setActive] = useState({ Espécie: '🐶 Cães', Porte: 'Médio', Idade: 'Adulto' })
+  const [pets, setPets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [species, setSpecies] = useState('cão')
+  const [size, setSize] = useState(null)
+  const [sex, setSex] = useState(null)
 
-  function toggle(group, option) {
-    setActive((prev) => ({ ...prev, [group]: prev[group] === option ? null : option }))
+  useEffect(() => {
+    let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading ao trocar filtro
+    setLoading(true)
+    setError(null)
+
+    listAvailablePets({ species, size, sex })
+      .then((result) => {
+        if (!cancelled) setPets(result)
+      })
+      .catch(() => {
+        if (!cancelled) setError('Não foi possível carregar os pets agora. Tente novamente em instantes.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [species, size, sex])
+
+  function clearFilters() {
+    setSpecies(null)
+    setSize(null)
+    setSex(null)
   }
 
   return (
@@ -31,26 +63,62 @@ function Buscar() {
 
       <div className="grid grid-cols-1 items-start gap-10 py-7.5 pb-17.5 md:grid-cols-[250px_1fr]">
         <aside className="sticky top-5 border-t-2 border-blue-deep pt-5">
-          {filterGroups.map((group) => (
-            <div key={group.label} className="mb-6.5">
-              <h4 className="mb-3 text-[13px] font-bold text-ink">{group.label}</h4>
-              <div className="flex flex-wrap gap-2">
-                {group.options.map((option) => (
-                  <Chip
-                    key={option}
-                    active={active[group.label] === option}
-                    onClick={() => toggle(group.label, option)}
-                  >
-                    {option}
-                  </Chip>
-                ))}
-              </div>
+          <div className="mb-6.5">
+            <h4 className="mb-3 text-[13px] font-bold text-ink">Espécie</h4>
+            <div className="flex flex-wrap gap-2">
+              {speciesOptions.map((opt) => (
+                <Chip
+                  key={opt.value}
+                  active={species === opt.value}
+                  onClick={() => setSpecies(species === opt.value ? null : opt.value)}
+                >
+                  {opt.label}
+                </Chip>
+              ))}
             </div>
-          ))}
-          <div
-            className="cursor-pointer text-[13.5px] font-semibold text-blue-mid"
-            onClick={() => setActive({})}
-          >
+          </div>
+
+          <div className="mb-6.5">
+            <h4 className="mb-3 text-[13px] font-bold text-ink">Porte</h4>
+            <div className="flex flex-wrap gap-2">
+              {sizeOptions.map((opt) => (
+                <Chip key={opt} active={size === opt} onClick={() => setSize(size === opt ? null : opt)}>
+                  {opt}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-6.5">
+            <h4 className="mb-3 text-[13px] font-bold text-ink">Idade</h4>
+            <div className="flex flex-wrap gap-2">
+              {ageOptions.map((opt) => (
+                <Chip key={opt}>{opt}</Chip>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-6.5">
+            <h4 className="mb-3 text-[13px] font-bold text-ink">Sexo</h4>
+            <div className="flex flex-wrap gap-2">
+              {sexOptions.map((opt) => (
+                <Chip key={opt} active={sex === opt} onClick={() => setSex(sex === opt ? null : opt)}>
+                  {opt}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-6.5">
+            <h4 className="mb-3 text-[13px] font-bold text-ink">Temperamento</h4>
+            <div className="flex flex-wrap gap-2">
+              {temperamentOptions.map((opt) => (
+                <Chip key={opt}>{opt}</Chip>
+              ))}
+            </div>
+          </div>
+
+          <div className="cursor-pointer text-[13.5px] font-semibold text-blue-mid" onClick={clearFilters}>
             Limpar filtros
           </div>
         </aside>
@@ -58,7 +126,7 @@ function Buscar() {
         <main>
           <div className="mb-5 flex items-center justify-between">
             <div className="text-[15px] text-ink-soft">
-              <strong className="text-ink">{mockPets.length}</strong> pets encontrados em Teresina, PI
+              <strong className="text-ink">{loading ? '...' : pets.length}</strong> pets encontrados
             </div>
             <select className="rounded-lg border-[1.3px] border-line bg-white px-3 py-2 text-[13.5px] text-ink-soft">
               <option>Mais recentes</option>
@@ -67,24 +135,20 @@ function Buscar() {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {mockPets.map((pet) => (
-              <GridPetCard key={pet.id} pet={pet} />
-            ))}
-          </div>
+          {loading && <p className="text-ink-soft">Carregando pets...</p>}
+          {error && <p className="text-terracotta">{error}</p>}
 
-          <div className="mt-11 flex justify-center gap-2">
-            {['1', '2', '3', '→'].map((label, i) => (
-              <span
-                key={label}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg border-[1.3px] text-sm ${
-                  i === 0 ? 'border-blue-deep bg-blue-deep text-cream' : 'border-line bg-white text-ink-soft'
-                }`}
-              >
-                {label}
-              </span>
-            ))}
-          </div>
+          {!loading && !error && pets.length === 0 && (
+            <p className="text-ink-soft">Nenhum pet encontrado com esses filtros.</p>
+          )}
+
+          {!loading && !error && pets.length > 0 && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {pets.map((pet) => (
+                <GridPetCard key={pet.id} pet={pet} />
+              ))}
+            </div>
+          )}
         </main>
       </div>
     </Container>
