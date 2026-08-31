@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscar pets — PetMatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-deep:#16324F; --blue-mid:#2D6E9E; --cream:#FBF6EC; --cream-2:#F3ECDD;
+    --terracotta:#C96A44; --ink:#22282F; --ink-soft:#5B6470; --line:#E4DBC8; --white:#FFFFFF; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'Source Sans 3',sans-serif;font-size:16px;line-height:1.55;}
+  h1,h2,h3{font-family:'Fraunces',serif;color:var(--blue-deep);margin:0;font-weight:600;letter-spacing:-0.01em;}
+  a{color:inherit;text-decoration:none;}
+  img{max-width:100%;display:block;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+  nav{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;max-width:1180px;margin:0 auto;}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:700;font-size:22px;color:var(--blue-deep);}
+  .logo-mark{width:34px;height:34px;border-radius:10px;background:var(--blue-deep);display:flex;align-items:center;justify-content:center;color:var(--cream);font-size:17px;}
+  .nav-links{display:flex;gap:30px;font-size:15px;color:var(--ink-soft);font-weight:500;}
+  .nav-links a.active{color:var(--blue-deep);}
+  .nav-right{display:flex;gap:14px;align-items:center;}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:9px;font-weight:600;font-size:14.5px;border:1px solid transparent;cursor:pointer;}
+  .btn-primary{background:var(--blue-deep);color:var(--cream);}
+  .btn-ghost{background:transparent;color:var(--blue-deep);border-color:var(--line);}
+  @media(max-width:900px){.nav-links{display:none;}}
+
+  .page-head{padding:34px 0 8px;}
+  .page-head .kicker{font-size:14px;color:var(--terracotta);font-weight:600;margin-bottom:8px;}
+  .page-head h1{font-size:34px;}
+  .page-head p{color:var(--ink-soft);margin-top:10px;font-size:16px;}
+
+  .layout{display:grid;grid-template-columns:250px 1fr;gap:40px;padding:30px 0 70px;align-items:start;}
+  @media(max-width:860px){.layout{grid-template-columns:1fr;}}
+
+  /* filters */
+  .filters{
+    border-top:2px solid var(--blue-deep);padding-top:20px;position:sticky;top:20px;
+  }
+  .filter-group{margin-bottom:26px;}
+  .filter-group h4{font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:700;margin:0 0 12px;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    padding:7px 14px;border-radius:999px;border:1.3px solid var(--line);background:var(--white);
+    font-size:13.5px;color:var(--ink-soft);cursor:pointer;font-weight:500;
+  }
+  .chip.active{background:var(--blue-deep);border-color:var(--blue-deep);color:var(--cream);}
+  .field{
+    width:100%;padding:10px 12px;border-radius:9px;border:1.3px solid var(--line);
+    font-family:inherit;font-size:14.5px;background:var(--white);
+  }
+  .clear-filters{font-size:13.5px;color:var(--blue-mid);font-weight:600;cursor:pointer;}
+
+  /* results */
+  .results-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+  .results-count{font-size:15px;color:var(--ink-soft);}
+  .results-count strong{color:var(--ink);}
+  .sort{font-size:13.5px;color:var(--ink-soft);border:1.3px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--white);}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  @media(max-width:1050px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .card .photo{aspect-ratio:4/3.1;position:relative;background:#ddd;}
+  .card .photo img{width:100%;height:100%;object-fit:cover;}
+  .card .tag{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.94);color:var(--blue-deep);font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;}
+  .card .heart{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .card .body{padding:16px 16px 18px;}
+  .card .name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:var(--blue-deep);}
+  .card .meta{font-size:13.5px;color:var(--ink-soft);margin-top:4px;}
+  .card .loc{font-size:13px;color:var(--ink-soft);margin-top:10px;display:flex;align-items:center;gap:5px;}
+
+  .pagination{display:flex;justify-content:center;gap:8px;margin-top:44px;}
+  .page-btn{width:36px;height:36px;border-radius:8px;border:1.3px solid var(--line);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--ink-soft);}
+  .page-btn.active{background:var(--blue-deep);border-color:var(--blue-deep);color:var(--cream);}
+
+  footer{background:var(--blue-deep);color:#C7D5E1;margin-top:40px;padding:36px 0;text-align:center;font-size:13.5px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><span class="logo-mark">♡</span>PetMatch</div>
+  <div class="nav-links">
+    <a href="index.html">Início</a>
+    <a href="buscar.html" class="active">Encontrar um pet</a>
+    <a href="cadastrar.html">Cadastrar pet</a>
+    <a href="#">Para protetores</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn btn-ghost">Entrar</a>
+    <a class="btn btn-primary" href="cadastrar.html">Cadastrar pet</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="kicker">Cães e gatos perto de você</div>
+    <h1>Encontre seu próximo amigo</h1>
+    <p>Todos os animais aqui estão sob cuidado de pessoas ou protetores reais — nenhum anúncio é de loja.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="filters">
+      <div class="filter-group">
+        <h4>Espécie</h4>
+        <div class="chip-row">
+          <span class="chip active">🐶 Cães</span>
+          <span class="chip">🐱 Gatos</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <h4>Cidade</h4>
+        <input class="field" type="text" value="Teresina, PI">
+      </div>
+      <div class="filter-group">
+        <h4>Porte</h4>
+        <div class="chip-row">
+          <span class="chip">Pequeno</span>
+          <span class="chip active">Médio</span>
+          <span class="chip">Grande</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <h4>Idade</h4>
+        <div class="chip-row">
+          <span class="chip">Filhote</span>
+          <span class="chip active">Adulto</span>
+          <span class="chip">Idoso</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <h4>Sexo</h4>
+        <div class="chip-row">
+          <span class="chip">Macho</span>
+          <span class="chip">Fêmea</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <h4>Temperamento</h4>
+        <div class="chip-row">
+          <span class="chip">Dócil</span>
+          <span class="chip">Brincalhão</span>
+          <span class="chip">Calmo</span>
+          <span class="chip">Independente</span>
+        </div>
+      </div>
+      <div class="clear-filters">Limpar filtros</div>
+    </aside>
+
+    <main>
+      <div class="results-head">
+        <div class="results-count"><strong>12</strong> pets encontrados em Teresina, PI</div>
+        <select class="sort"><option>Mais recentes</option><option>Mais próximos</option><option>Mais jovens</option></select>
+      </div>
+
+      <div class="grid">
+        <a class="card" href="pet.html">
+          <div class="photo"><img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=500&q=80"><span class="tag">Médio</span><span class="heart">♡</span></div>
+          <div class="body"><div class="name">Mel</div><div class="meta">Fêmea · 2 anos · Dócil</div><div class="loc">📍 Teresina, PI — 3 km</div></div>
+        </a>
+        <a class="card" href="pet.html">
+          <div class="photo"><img src="https://images.unsplash.com/photo-1517849845537-4d257902861a?w=500&q=80"><span class="tag">Grande</span><span class="heart">♡</span></div>
+          <div class="body"><div class="name">Thor</div><div class="meta">Macho · 3 anos · Brincalhão</div><div class="loc">📍 Teresina, PI — 5 km</div></div>
+        </a>
+        <a class="card" href="pet.html">
+          <div class="photo"><img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=500&q=80"><span class="tag">Médio</span><span class="heart">♡</span></div>
+          <div class="body"><div class="name">Fred</div><div class="meta">Macho · 2 anos · Calmo</div><div class="loc">📍 Teresina, PI — 6 km</div></div>
+        </a>
+        <a class="card" href="pet.html">
+          <div class="photo"><img src="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=500&q=80"><span class="tag">Pequeno</span><span class="heart">♡</span></div>
+          <div class="body"><div class="name">Bidu</div><div class="meta">Macho · 1 ano · Dócil</div><div class="loc">📍 Teresina, PI — 8 km</div></div>
+        </a>
+        <a class="card" href="pet.html">
+          <div class="photo"><img src="https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?w=500&q=80"><span class="tag">Médio</span><span class="heart">♡</span></div>
+          <div class="body"><div class="name">Duque</div><div class="meta">Macho · 4 anos · Independente</div><div class="loc">📍 Teresina, PI — 9 km</div></div>
+        </a>
+        <a class="card" href="pet.html">
+          <div class="photo"><img src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=500&q=80"><span class="tag">Pequeno</span><span class="heart">♡</span></div>
+          <div class="body"><div class="name">Nina</div><div class="meta">Fêmea · Filhote · Brincalhona</div><div class="loc">📍 Teresina, PI — 2 km</div></div>
+        </a>
+      </div>
+
+      <div class="pagination">
+        <span class="page-btn active">1</span>
+        <span class="page-btn">2</span>
+        <span class="page-btn">3</span>
+        <span class="page-btn">→</span>
+      </div>
+    </main>
+  </div>
+</div>
+
+<footer>© 2026 PetMatch. Plataforma gratuita, sem fins lucrativos.</footer>
+
+</body>
+</html>

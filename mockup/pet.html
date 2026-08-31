@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mel — Cão para adoção em Teresina, PI · PetMatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-deep:#16324F; --blue-mid:#2D6E9E; --cream:#FBF6EC; --cream-2:#F3ECDD;
+    --terracotta:#C96A44; --green:#3E7D53; --ink:#22282F; --ink-soft:#5B6470; --line:#E4DBC8; --white:#FFFFFF; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'Source Sans 3',sans-serif;font-size:16px;line-height:1.55;}
+  h1,h2,h3{font-family:'Fraunces',serif;color:var(--blue-deep);margin:0;font-weight:600;letter-spacing:-0.01em;}
+  a{color:inherit;text-decoration:none;}
+  img{max-width:100%;display:block;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+  nav{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;max-width:1180px;margin:0 auto;}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:700;font-size:22px;color:var(--blue-deep);}
+  .logo-mark{width:34px;height:34px;border-radius:10px;background:var(--blue-deep);display:flex;align-items:center;justify-content:center;color:var(--cream);font-size:17px;}
+  .nav-links{display:flex;gap:30px;font-size:15px;color:var(--ink-soft);font-weight:500;}
+  .nav-right{display:flex;gap:14px;align-items:center;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:9px;font-weight:600;font-size:14.5px;border:1px solid transparent;cursor:pointer;width:100%;}
+  .btn-primary{background:var(--blue-deep);color:var(--cream);}
+  .btn-ghost{background:transparent;color:var(--blue-deep);border-color:var(--line);}
+  .btn-whatsapp{background:var(--green);color:var(--white);}
+  @media(max-width:900px){.nav-links{display:none;}}
+
+  .breadcrumb{font-size:13.5px;color:var(--ink-soft);padding:22px 0 0;}
+  .breadcrumb a{color:var(--blue-mid);}
+
+  .pet-layout{display:grid;grid-template-columns:1.3fr 0.9fr;gap:48px;padding:24px 0 70px;align-items:start;}
+  @media(max-width:900px){.pet-layout{grid-template-columns:1fr;}}
+
+  .gallery{display:grid;grid-template-columns:2fr 1fr;gap:10px;}
+  .gallery .main-photo{grid-row:1/3;border-radius:16px;overflow:hidden;aspect-ratio:1/1.05;}
+  .gallery .thumb{border-radius:12px;overflow:hidden;aspect-ratio:1/1;}
+  .gallery img{width:100%;height:100%;object-fit:cover;}
+
+  .pet-title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-top:26px;}
+  .pet-title-row h1{font-size:36px;}
+  .pet-title-row .status{font-size:13px;font-weight:700;color:var(--green);background:#E7F1EA;padding:6px 12px;border-radius:999px;}
+  .pet-loc{color:var(--ink-soft);margin-top:8px;font-size:15px;}
+
+  .facts{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+  .fact{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13.5px;color:var(--ink-soft);}
+  .fact strong{color:var(--ink);display:block;font-size:14.5px;}
+
+  .story{margin-top:34px;}
+  .story h3{font-size:19px;margin-bottom:10px;}
+  .story p{color:var(--ink-soft);font-size:15.5px;max-width:560px;}
+
+  .health{margin-top:30px;}
+  .health h3{font-size:19px;margin-bottom:12px;}
+  .health-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:420px;}
+  .health-item{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--ink);}
+  .check{width:20px;height:20px;border-radius:50%;background:var(--green);color:var(--white);font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+  .temperament{margin-top:30px;}
+  .temperament h3{font-size:19px;margin-bottom:12px;}
+  .temp-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .temp-chip{padding:7px 14px;border-radius:999px;background:var(--cream-2);border:1px solid var(--line);font-size:13.5px;color:var(--blue-deep);font-weight:600;}
+
+  /* sidebar */
+  .sidebar{position:sticky;top:24px;}
+  .contact-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:26px;}
+  .contact-card .resp-label{font-size:12.5px;color:var(--ink-soft);text-transform:none;font-weight:600;}
+  .resp-row{display:flex;align-items:center;gap:12px;margin:10px 0 20px;}
+  .resp-avatar{width:44px;height:44px;border-radius:50%;background:var(--blue-mid);flex-shrink:0;}
+  .resp-name{font-weight:700;font-size:15px;}
+  .resp-type{font-size:13px;color:var(--ink-soft);}
+  .contact-card .btn{margin-bottom:10px;}
+  .safety-note{font-size:12.5px;color:var(--ink-soft);margin-top:16px;line-height:1.5;border-top:1px solid var(--line);padding-top:16px;}
+
+  .adopt-checklist{background:var(--cream-2);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:18px;}
+  .adopt-checklist h4{font-size:14.5px;color:var(--blue-deep);margin:0 0 12px;font-weight:700;}
+  .adopt-checklist ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-soft);display:flex;flex-direction:column;gap:8px;}
+
+  footer{background:var(--blue-deep);color:#C7D5E1;margin-top:20px;padding:36px 0;text-align:center;font-size:13.5px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><span class="logo-mark">♡</span>PetMatch</div>
+  <div class="nav-links">
+    <a href="index.html">Início</a>
+    <a href="buscar.html">Encontrar um pet</a>
+    <a href="cadastrar.html">Cadastrar pet</a>
+    <a href="#">Para protetores</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn btn-ghost">Entrar</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="breadcrumb"><a href="buscar.html">Encontrar um pet</a> / Teresina, PI / Mel</div>
+
+  <div class="pet-layout">
+    <div>
+      <div class="gallery">
+        <div class="main-photo"><img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=700&q=80"></div>
+        <div class="thumb"><img src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=300&q=80"></div>
+        <div class="thumb"><img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=300&q=80"></div>
+      </div>
+
+      <div class="pet-title-row">
+        <div>
+          <h1>Mel</h1>
+          <div class="pet-loc">📍 Teresina, PI · cadastrada há 5 dias</div>
+        </div>
+        <span class="status">● Disponível</span>
+      </div>
+
+      <div class="facts">
+        <div class="fact"><strong>Fêmea</strong>Sexo</div>
+        <div class="fact"><strong>2 anos</strong>Idade</div>
+        <div class="fact"><strong>Médio</strong>Porte</div>
+        <div class="fact"><strong>SRD</strong>Raça</div>
+      </div>
+
+      <div class="story">
+        <h3>A história da Mel</h3>
+        <p>A Mel foi resgatada ainda filhote de uma rua movimentada perto do Centro. Hoje é uma cadela tranquila, que adora deitar perto das pessoas e se dá bem com crianças. Já foi vista brincando com outros cães sem problema. Precisa de um quintal ou espaço pra caminhar todos os dias.</p>
+      </div>
+
+      <div class="health">
+        <h3>Saúde e cuidados</h3>
+        <div class="health-grid">
+          <div class="health-item"><span class="check">✓</span> Vacinada</div>
+          <div class="health-item"><span class="check">✓</span> Vermifugada</div>
+          <div class="health-item"><span class="check">✓</span> Castrada</div>
+          <div class="health-item"><span class="check">✓</span> Sem doenças conhecidas</div>
+        </div>
+      </div>
+
+      <div class="temperament">
+        <h3>Temperamento</h3>
+        <div class="temp-chips">
+          <span class="temp-chip">Dócil</span>
+          <span class="temp-chip">Sociável com crianças</span>
+          <span class="temp-chip">Convive bem com outros cães</span>
+          <span class="temp-chip">Precisa de espaço para caminhar</span>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="contact-card">
+        <div class="resp-label">Responsável pela Mel</div>
+        <div class="resp-row">
+          <div class="resp-avatar"></div>
+          <div>
+            <div class="resp-name">Carla Menezes</div>
+            <div class="resp-type">Protetora independente</div>
+          </div>
+        </div>
+        <a class="btn btn-whatsapp">💬 Conversar no WhatsApp</a>
+        <a class="btn btn-ghost">♡ Salvar</a>
+        <div class="safety-note">O contato é feito direto com a Carla. O PetMatch não intermedia a adoção nem cobra taxas — desconfie de qualquer cobrança pedida antes do encontro.</div>
+      </div>
+
+      <div class="adopt-checklist">
+        <h4>Antes de adotar, pense em:</h4>
+        <ul>
+          <li>Você tem espaço e tempo para os passeios diários da Mel?</li>
+          <li>Todos em casa estão de acordo com a adoção?</li>
+          <li>Você está preparado para os custos de veterinário e alimentação?</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer>© 2026 PetMatch. Plataforma gratuita, sem fins lucrativos.</footer>
+
+</body>
+</html>
