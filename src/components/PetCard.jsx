@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/useAuth'
+import { useFavorites } from '../context/useFavorites'
 
 function locationLine(pet) {
   return [pet.neighborhood, pet.city].filter(Boolean).join(', ')
@@ -31,6 +33,21 @@ export function FeaturePetCard({ pet, className = '' }) {
 }
 
 export function GridPetCard({ pet }) {
+  const { user, loginWithGoogle } = useAuth()
+  const { favoriteIds, toggleFavorite } = useFavorites()
+  const isOwner = user?.uid === pet.donorId
+  const isFavorite = favoriteIds.includes(pet.id)
+
+  function handleFavoriteClick(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) {
+      loginWithGoogle()
+      return
+    }
+    toggleFavorite(pet.id)
+  }
+
   return (
     <Link to={`/pet/${pet.id}`} className="block overflow-hidden rounded-[14px] border border-line bg-white">
       <div className="relative aspect-[4/3.1] bg-neutral-300">
@@ -40,9 +57,18 @@ export function GridPetCard({ pet }) {
             {pet.tag}
           </span>
         )}
-        <span className="absolute top-2.5 right-2.5 flex h-[30px] w-[30px] items-center justify-center rounded-full bg-white/90 text-sm">
-          ♡
-        </span>
+        {!isOwner && (
+          <button
+            type="button"
+            onClick={handleFavoriteClick}
+            aria-label={isFavorite ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
+            className={`absolute top-2.5 right-2.5 flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-full bg-white/90 text-sm transition-colors hover:bg-white ${
+              isFavorite ? 'text-terracotta' : ''
+            }`}
+          >
+            {isFavorite ? '♥' : '♡'}
+          </button>
+        )}
       </div>
       <div className="px-4 pt-4 pb-4.5">
         <div className="font-display text-[19px] font-semibold text-blue-deep">{pet.name}</div>

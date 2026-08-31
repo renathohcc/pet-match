@@ -7,11 +7,13 @@ import StatusBadge from '../components/StatusBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { deletePet, getPetById, PET_STATUSES, updatePetStatus } from '../lib/pets'
 import { useAuth } from '../context/useAuth'
+import { useFavorites } from '../context/useFavorites'
 
 function PetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, loginWithGoogle } = useAuth()
+  const { favoriteIds, toggleFavorite } = useFavorites()
   const [pet, setPet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -82,6 +84,15 @@ function PetDetail() {
   )}`
 
   const isOwner = user?.uid === pet.donorId
+  const isFavorite = favoriteIds.includes(pet.id)
+
+  function handleFavoriteClick() {
+    if (!user) {
+      loginWithGoogle()
+      return
+    }
+    toggleFavorite(pet.id)
+  }
 
   async function handleStatusChange(status) {
     setUpdatingStatus(true)
@@ -237,7 +248,9 @@ function PetDetail() {
               <Button as="a" href={whatsappHref} target="_blank" rel="noreferrer" variant="whatsapp" className="mb-2.5 w-full">
                 💬 Conversar no WhatsApp
               </Button>
-              <Button variant="ghost" className="mb-2.5 w-full">♡ Salvar</Button>
+              <Button variant="ghost" className="mb-2.5 w-full" onClick={handleFavoriteClick}>
+                {isFavorite ? '♥ Salvo' : '♡ Salvar'}
+              </Button>
               <div className="mt-4 border-t border-line pt-4 text-[12.5px] leading-relaxed text-ink-soft">
                 O contato é feito direto com {pet.contactName.split(' ')[0]}. O PetMatch não intermedia a adoção nem
                 cobra taxas — desconfie de qualquer cobrança pedida antes do encontro.
