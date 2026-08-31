@@ -201,10 +201,10 @@ function PetDetail() {
                     type="button"
                     disabled={updatingStatus}
                     onClick={() => setConfirmAction({ type: 'status', value })}
-                    className={`rounded-full border-[1.3px] px-3.5 py-[7px] text-[13px] font-medium ${
+                    className={`cursor-pointer rounded-full border-[1.3px] px-3.5 py-[7px] text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                       pet.status === value
                         ? 'border-blue-deep bg-blue-deep text-cream'
-                        : 'border-line bg-white text-ink-soft'
+                        : 'border-line bg-white text-ink-soft hover:border-blue-deep hover:text-blue-deep'
                     }`}
                   >
                     {label}
@@ -215,7 +215,7 @@ function PetDetail() {
               <button
                 type="button"
                 onClick={() => setConfirmAction({ type: 'delete' })}
-                className="mt-5 w-full border-t border-line pt-4 text-left text-[13px] font-semibold text-terracotta"
+                className="mt-5 w-full cursor-pointer border-t border-line pt-4 text-left text-[13px] font-semibold text-terracotta transition-colors hover:text-[#a3532f]"
               >
                 🗑 Excluir anúncio
               </button>
