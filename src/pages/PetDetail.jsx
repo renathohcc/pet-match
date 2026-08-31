@@ -142,7 +142,9 @@ function PetDetail() {
           <div className="mt-6.5 flex items-start justify-between">
             <div>
               <h1 className="font-display text-[36px] text-blue-deep">{pet.name}</h1>
-              <div className="mt-2 text-[15px] text-ink-soft">📍 {pet.city} · {pet.postedAgo}</div>
+              <div className="mt-2 text-[15px] text-ink-soft">
+                📍 {[pet.neighborhood, pet.city].filter(Boolean).join(', ')}{pet.postedAgo ? ` · ${pet.postedAgo}` : ''}
+              </div>
             </div>
             <StatusBadge status={pet.status} />
           </div>

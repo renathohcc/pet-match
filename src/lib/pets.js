@@ -27,6 +27,12 @@ export async function listAvailablePets(filters = {}) {
   if (filters.sex) {
     pets = pets.filter((p) => p.sex === filters.sex)
   }
+  if (filters.city) {
+    pets = pets.filter((p) => p.city === filters.city)
+  }
+  if (filters.neighborhood) {
+    pets = pets.filter((p) => p.neighborhood === filters.neighborhood)
+  }
 
   return pets
 }

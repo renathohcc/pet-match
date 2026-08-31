@@ -4,6 +4,7 @@ import Container from '../components/Container'
 import Chip from '../components/Chip'
 import { GridPetCard } from '../components/PetCard'
 import { listAvailablePets } from '../lib/pets'
+import { CITIES, neighborhoodsForCity } from '../data/locations'
 
 const speciesOptions = [
   { label: '🐶 Cães', value: 'cão' },
@@ -23,6 +24,8 @@ function Buscar() {
   const [species, setSpecies] = useState('cão')
   const [size, setSize] = useState(null)
   const [sex, setSex] = useState(null)
+  const [city, setCity] = useState(null)
+  const [neighborhood, setNeighborhood] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -30,7 +33,7 @@ function Buscar() {
     setLoading(true)
     setError(null)
 
-    listAvailablePets({ species, size, sex })
+    listAvailablePets({ species, size, sex, city, neighborhood })
       .then((result) => {
         if (!cancelled) setPets(result)
       })
@@ -44,12 +47,20 @@ function Buscar() {
     return () => {
       cancelled = true
     }
-  }, [species, size, sex])
+  }, [species, size, sex, city, neighborhood])
+
+  function handleCityToggle(value) {
+    const next = city === value ? null : value
+    setCity(next)
+    setNeighborhood(null)
+  }
 
   function clearFilters() {
     setSpecies(null)
     setSize(null)
     setSex(null)
+    setCity(null)
+    setNeighborhood(null)
   }
 
   return (
@@ -69,6 +80,33 @@ function Buscar() {
 
       <div className="grid grid-cols-1 items-start gap-10 py-7.5 pb-17.5 md:grid-cols-[250px_1fr]">
         <aside className="sticky top-5 border-t-2 border-blue-deep pt-5">
+          <div className="mb-6.5">
+            <h4 className="mb-3 text-[13px] font-bold text-ink">Cidade</h4>
+            <div className="flex flex-wrap gap-2">
+              {CITIES.map((c) => (
+                <Chip key={c.value} active={city === c.value} onClick={() => handleCityToggle(c.value)}>
+                  {c.value}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {city && (
+            <div className="mb-6.5">
+              <h4 className="mb-3 text-[13px] font-bold text-ink">Bairro</h4>
+              <select
+                className="w-full rounded-[9px] border-[1.3px] border-line bg-white px-3 py-2.5 text-[13.5px] text-ink-soft"
+                value={neighborhood ?? ''}
+                onChange={(e) => setNeighborhood(e.target.value || null)}
+              >
+                <option value="">Todos os bairros</option>
+                {neighborhoodsForCity(city).map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="mb-6.5">
             <h4 className="mb-3 text-[13px] font-bold text-ink">Espécie</h4>
             <div className="flex flex-wrap gap-2">

@@ -7,6 +7,7 @@ import Button from '../components/Button'
 import { db } from '../lib/firebase'
 import { uploadPetPhoto } from '../lib/cloudinary'
 import { useAuth } from '../context/useAuth'
+import { CITIES, neighborhoodsForCity } from '../data/locations'
 
 const MAX_PHOTOS = 5
 
@@ -56,8 +57,14 @@ function Cadastrar() {
   const [temperament, setTemperament] = useState(['Dócil', 'Bom com crianças'])
   const [story, setStory] = useState('')
   const [photos, setPhotos] = useState([])
-  const [city, setCity] = useState('')
+  const [city, setCity] = useState(CITIES[0].value)
+  const [neighborhood, setNeighborhood] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
+
+  function handleCityChange(newCity) {
+    setCity(newCity)
+    setNeighborhood('')
+  }
 
   function toggleTemperament(tag) {
     setTemperament((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
@@ -106,6 +113,7 @@ function Cadastrar() {
         temperament,
         story,
         city,
+        neighborhood,
         whatsapp,
         image: photoUrls[0] ?? '',
         thumbs: photoUrls.slice(1),
@@ -283,15 +291,27 @@ function Cadastrar() {
             <legend className="mb-4.5 font-display text-xl font-semibold text-blue-deep">Localização e contato</legend>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Cidade">
-                <input
-                  className={fieldClass}
-                  type="text"
-                  placeholder="Ex: Teresina, PI"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  required
-                />
+                <select className={fieldClass} value={city} onChange={(e) => handleCityChange(e.target.value)}>
+                  {CITIES.map((c) => (
+                    <option key={c.value} value={c.value}>{c.value}</option>
+                  ))}
+                </select>
               </Field>
+              <Field label="Bairro">
+                <select
+                  className={fieldClass}
+                  value={neighborhood}
+                  onChange={(e) => setNeighborhood(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>Selecione o bairro</option>
+                  {neighborhoodsForCity(city).map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="WhatsApp para contato">
                 <input
                   className={fieldClass}

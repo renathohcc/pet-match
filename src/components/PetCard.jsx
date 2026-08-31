@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom'
 
+function locationLine(pet) {
+  return [pet.neighborhood, pet.city].filter(Boolean).join(', ')
+}
+
 function metaLine(pet) {
   const species = pet.species === 'cão' ? 'Cão' : 'Gata'
-  return [species, pet.sex, pet.age, pet.city].filter(Boolean).join(' · ')
+  return [species, pet.sex, pet.age, locationLine(pet)].filter(Boolean).join(' · ')
 }
 
 export function FeaturePetCard({ pet, className = '' }) {
@@ -45,7 +49,7 @@ export function GridPetCard({ pet }) {
         <div className="mt-1 text-[13.5px] text-ink-soft">
           {pet.sex} · {pet.age} · {pet.temperament?.[0]}
         </div>
-        <div className="mt-2.5 flex items-center gap-1 text-[13px] text-ink-soft">📍 {pet.city}</div>
+        <div className="mt-2.5 flex items-center gap-1 text-[13px] text-ink-soft">📍 {locationLine(pet)}</div>
       </div>
     </Link>
   )
