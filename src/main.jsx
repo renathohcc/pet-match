@@ -9,7 +9,7 @@ import { AuthProvider } from './context/AuthContext.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <HelmetProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/pet-match">
         <AuthProvider>
           <App />
         </AuthProvider>
