@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Buscar from './pages/Buscar'
 import Cadastrar from './pages/Cadastrar'
 import PetDetail from './pages/PetDetail'
+import Profile from './pages/Profile'
 
 function App() {
   return (
@@ -23,6 +24,14 @@ function App() {
           }
         />
         <Route path="/pet/:id" element={<PetDetail />} />
+        <Route
+          path="/perfil"
+          element={
+            <RequireAuth title="Entre para ver seu perfil" message="Faça login com Google para ver seus dados e os pets que você cadastrou.">
+              <Profile />
+            </RequireAuth>
+          }
+        />
       </Routes>
       <Footer />
     </>

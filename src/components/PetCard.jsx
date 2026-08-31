@@ -32,7 +32,7 @@ export function FeaturePetCard({ pet, className = '' }) {
   )
 }
 
-export function GridPetCard({ pet }) {
+export function GridPetCard({ pet, statusLabel }) {
   const { user, loginWithGoogle } = useAuth()
   const { favoriteIds, toggleFavorite } = useFavorites()
   const isOwner = user?.uid === pet.donorId
@@ -71,7 +71,14 @@ export function GridPetCard({ pet }) {
         )}
       </div>
       <div className="px-4 pt-4 pb-4.5">
-        <div className="font-display text-[19px] font-semibold text-blue-deep">{pet.name}</div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-display text-[19px] font-semibold text-blue-deep">{pet.name}</div>
+          {statusLabel && (
+            <span className="whitespace-nowrap rounded-full bg-cream-2 px-2.5 py-1 text-[11px] font-bold text-blue-deep">
+              {statusLabel}
+            </span>
+          )}
+        </div>
         <div className="mt-1 text-[13.5px] text-ink-soft">
           {pet.sex} · {pet.age} · {pet.temperament?.[0]}
         </div>

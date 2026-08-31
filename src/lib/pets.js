@@ -37,6 +37,16 @@ export async function listAvailablePets(filters = {}) {
   return pets
 }
 
+/**
+ * Todos os pets cadastrados por um usuário, independente do status
+ * (a rule de leitura já permite isso pro dono via isOwner()).
+ */
+export async function listMyPets(uid) {
+  const q = query(petsRef, where('donorId', '==', uid))
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
 export async function getPetById(id) {
   const snapshot = await getDoc(doc(db, 'pets', id))
   return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null

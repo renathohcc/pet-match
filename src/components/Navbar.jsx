@@ -35,9 +35,15 @@ function Navbar() {
       <div className="flex items-center gap-3.5">
         {user ? (
           <div className="flex items-center gap-2.5">
-            {user.photoURL && (
-              <img src={user.photoURL} alt={user.displayName ?? 'Você'} className="h-8 w-8 rounded-full" />
-            )}
+            <Link to="/perfil" title="Meu perfil">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName ?? 'Você'} className="h-8 w-8 rounded-full" />
+              ) : (
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-mid text-sm font-semibold text-white">
+                  {(user.displayName ?? 'U')[0]}
+                </span>
+              )}
+            </Link>
             <Button variant="ghost" onClick={() => logout()}>
               Sair
             </Button>
