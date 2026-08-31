@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import Container from '../components/Container'
 import Button from '../components/Button'
 
@@ -62,6 +63,11 @@ function Cadastrar() {
 
   return (
     <Container>
+      <Helmet>
+        <title>Cadastrar um pet para adoção — PetMatch</title>
+        <meta name="description" content="Cadastre gratuitamente um cão ou gato para adoção responsável. Sem prazo de expiração." />
+      </Helmet>
+
       <div className="pb-1.5 pt-9">
         <div className="mb-2 text-sm font-semibold text-terracotta">Cadastro gratuito, sem prazo de expiração</div>
         <h1 className="font-display text-[32px] text-blue-deep">Cadastrar um pet para adoção</h1>

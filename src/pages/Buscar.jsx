@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import Container from '../components/Container'
 import Chip from '../components/Chip'
 import { GridPetCard } from '../components/PetCard'
@@ -53,6 +54,11 @@ function Buscar() {
 
   return (
     <Container>
+      <Helmet>
+        <title>Buscar pets para adoção — PetMatch</title>
+        <meta name="description" content="Encontre cães e gatos para adoção responsável perto de você. Filtre por espécie, porte e sexo." />
+      </Helmet>
+
       <div className="pb-2 pt-8.5">
         <div className="mb-2 text-sm font-semibold text-terracotta">Cães e gatos perto de você</div>
         <h1 className="font-display text-[34px] text-blue-deep">Encontre seu próximo amigo</h1>

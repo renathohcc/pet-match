@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
@@ -63,8 +64,23 @@ function PetDetail() {
     `Olá! Vi o anúncio do(a) ${pet.name} no PetMatch e tenho interesse em adotar.`
   )}`
 
+  const pageTitle = `${pet.name} — ${pet.species === 'cão' ? 'Cão' : 'Gato'} para adoção em ${pet.city} · PetMatch`
+  const pageDescription = pet.story || `${pet.name} está esperando por um lar em ${pet.city}. Adoção responsável, sem intermediários.`
+  const pageUrl = typeof window !== 'undefined' ? window.location.href : ''
+
   return (
     <Container>
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        {pet.image && <meta property="og:image" content={pet.image} />}
+        {pageUrl && <meta property="og:url" content={pageUrl} />}
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
+
       <div className="pt-5.5 text-[13.5px] text-ink-soft">
         <Link to="/buscar" className="text-blue-mid">Encontrar um pet</Link> / {pet.city} / {pet.name}
       </div>
