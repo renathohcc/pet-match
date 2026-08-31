@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import RequireAuth from './components/RequireAuth'
 import Home from './pages/Home'
 import Buscar from './pages/Buscar'
 import Cadastrar from './pages/Cadastrar'
@@ -13,7 +14,14 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/buscar" element={<Buscar />} />
-        <Route path="/cadastrar" element={<Cadastrar />} />
+        <Route
+          path="/cadastrar"
+          element={
+            <RequireAuth>
+              <Cadastrar />
+            </RequireAuth>
+          }
+        />
         <Route path="/pet/:id" element={<PetDetail />} />
       </Routes>
       <Footer />

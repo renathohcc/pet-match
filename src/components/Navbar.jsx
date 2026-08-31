@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import Button from './Button'
+import { useAuth } from '../context/useAuth'
 
 const navLinks = [
   { to: '/', label: 'Início' },
@@ -8,6 +9,8 @@ const navLinks = [
 ]
 
 function Navbar() {
+  const { user, loginWithGoogle, logout } = useAuth()
+
   return (
     <nav className="mx-auto flex max-w-[1180px] items-center justify-between px-7 py-5">
       <Link to="/" className="flex items-center gap-2.5 font-display text-[22px] font-bold text-blue-deep">
@@ -30,7 +33,20 @@ function Navbar() {
       </div>
 
       <div className="flex items-center gap-3.5">
-        <Button variant="ghost">Entrar</Button>
+        {user ? (
+          <div className="flex items-center gap-2.5">
+            {user.photoURL && (
+              <img src={user.photoURL} alt={user.displayName ?? 'Você'} className="h-8 w-8 rounded-full" />
+            )}
+            <Button variant="ghost" onClick={() => logout()}>
+              Sair
+            </Button>
+          </div>
+        ) : (
+          <Button variant="ghost" onClick={() => loginWithGoogle()}>
+            Entrar
+          </Button>
+        )}
         <Button as={Link} to="/cadastrar" variant="primary">
           Cadastrar pet
         </Button>
