@@ -1,5 +1,11 @@
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore'
 import { db } from './firebase'
+
+export const PET_STATUSES = {
+  disponivel: 'Disponível',
+  em_processo: 'Em processo',
+  adotado: 'Adotado',
+}
 
 const petsRef = collection(db, 'pets')
 
@@ -28,4 +34,8 @@ export async function listAvailablePets(filters = {}) {
 export async function getPetById(id) {
   const snapshot = await getDoc(doc(db, 'pets', id))
   return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null
+}
+
+export async function updatePetStatus(id, status) {
+  await updateDoc(doc(db, 'pets', id), { status })
 }

@@ -4,13 +4,16 @@ import { Helmet } from 'react-helmet-async'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
-import { getPetById } from '../lib/pets'
+import { getPetById, PET_STATUSES, updatePetStatus } from '../lib/pets'
+import { useAuth } from '../context/useAuth'
 
 function PetDetail() {
   const { id } = useParams()
+  const { user } = useAuth()
   const [pet, setPet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -70,6 +73,18 @@ function PetDetail() {
     `Olá! Vi o anúncio do(a) ${pet.name} no PetMatch e tenho interesse em adotar.`
   )}`
 
+  const isOwner = user?.uid === pet.donorId
+
+  async function handleStatusChange(status) {
+    setUpdatingStatus(true)
+    try {
+      await updatePetStatus(pet.id, status)
+      setPet((prev) => ({ ...prev, status }))
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
   const pageTitle = `${pet.name} — ${pet.species === 'cão' ? 'Cão' : 'Gato'} para adoção em ${pet.city} · PetMatch`
   const pageDescription = pet.story || `${pet.name} está esperando por um lar em ${pet.city}. Adoção responsável, sem intermediários.`
   const pageUrl = typeof window !== 'undefined' ? window.location.href : ''
@@ -109,7 +124,7 @@ function PetDetail() {
               <h1 className="font-display text-[36px] text-blue-deep">{pet.name}</h1>
               <div className="mt-2 text-[15px] text-ink-soft">📍 {pet.city} · {pet.postedAgo}</div>
             </div>
-            <StatusBadge />
+            <StatusBadge status={pet.status} />
           </div>
 
           <div className="mt-5.5 flex flex-wrap gap-2.5">
@@ -156,6 +171,29 @@ function PetDetail() {
         </div>
 
         <aside className="sticky top-6">
+          {isOwner && (
+            <div className="mb-4.5 rounded-2xl border border-line bg-white p-5.5">
+              <h4 className="mb-3 text-[14.5px] font-bold text-blue-deep">Status do anúncio</h4>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(PET_STATUSES).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={updatingStatus}
+                    onClick={() => handleStatusChange(value)}
+                    className={`rounded-full border-[1.3px] px-3.5 py-[7px] text-[13px] font-medium ${
+                      pet.status === value
+                        ? 'border-blue-deep bg-blue-deep text-cream'
+                        : 'border-line bg-white text-ink-soft'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-line bg-white p-6.5">
             <div className="text-[12.5px] font-semibold text-ink-soft">Responsável {pet.species === 'cão' ? 'pelo' : 'pela'} {pet.name}</div>
             <div className="my-2.5 mb-5 flex items-center gap-3">
