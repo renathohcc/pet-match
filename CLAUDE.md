@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-PetMatch is a pet-adoption platform (pt-BR) being built as a React + Vite + Tailwind CSS frontend backed by Firebase (Auth, Firestore, Storage), deployed to GitHub Pages from a **public** repository.
+PetMatch is a pet-adoption platform (pt-BR) being built as a React + Vite + Tailwind CSS frontend backed by Firebase (Auth, Firestore) and Cloudinary (pet photo storage), deployed to GitHub Pages from a **public** repository.
+
+Pet photos are **not** stored in Firebase Storage — Storage now requires the paid Blaze plan even within the free quota. Photos are uploaded client-side to Cloudinary via an *unsigned* upload preset (`src/lib/cloudinary.js`), which needs no secret key in the client. Only the resulting image URL is saved on the pet's Firestore document.
 
 The original static HTML/CSS mockup (no JS, no build tooling) lives under `mockup/` for visual reference only — it is not part of the app build:
 
