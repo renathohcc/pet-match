@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(donorId) {
+      return isSignedIn() && request.auth.uid == donorId;
+    }
+
+    function hasValidPetShape(data) {
+      return data.keys().hasAll(['name', 'species', 'size', 'sex', 'city', 'status', 'donorId', 'createdAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 60
+        && data.species in ['cão', 'gato']
+        && data.size in ['Pequeno', 'Médio', 'Grande']
+        && data.sex in ['Macho', 'Fêmea']
+        && data.city is string && data.city.size() > 0
+        && data.status in ['disponivel', 'em_processo', 'adotado']
+        && data.donorId is string;
+    }
+
+    match /pets/{petId} {
+      allow read: if resource.data.status == 'disponivel' || isOwner(resource.data.donorId);
+
+      allow create: if isSignedIn()
+        && hasValidPetShape(request.resource.data)
+        && request.resource.data.donorId == request.auth.uid;
+
+      allow update: if isOwner(resource.data.donorId)
+        && hasValidPetShape(request.resource.data)
+        && request.resource.data.donorId == resource.data.donorId;
+
+      allow delete: if isOwner(resource.data.donorId);
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+  }
+}
