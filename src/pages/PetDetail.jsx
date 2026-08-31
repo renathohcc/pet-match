@@ -60,7 +60,13 @@ function PetDetail() {
     )
   }
 
-  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(
+  const whatsappDigits = pet.whatsapp?.replace(/\D/g, '')
+  const whatsappNumber = whatsappDigits
+    ? whatsappDigits.length <= 11
+      ? `55${whatsappDigits}` // assume DDD sem código do país (BR)
+      : whatsappDigits
+    : ''
+  const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
     `Olá! Vi o anúncio do(a) ${pet.name} no PetMatch e tenho interesse em adotar.`
   )}`
 
