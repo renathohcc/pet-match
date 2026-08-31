@@ -3,7 +3,8 @@
 // Uso: npm run seed
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import admin from 'firebase-admin'
+import { initializeApp, cert } from 'firebase-admin/app'
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { mockPets } from '../src/data/mockPets.js'
 
 const keyPath = fileURLToPath(new URL('./serviceAccountKey.json', import.meta.url))
@@ -20,8 +21,8 @@ try {
   process.exit(1)
 }
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) })
-const db = admin.firestore()
+initializeApp({ credential: cert(serviceAccount) })
+const db = getFirestore()
 
 async function seed() {
   const batch = db.batch()
@@ -31,7 +32,7 @@ async function seed() {
       ...pet,
       status: 'disponivel',
       donorId: 'seed-donor',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     })
   }
   await batch.commit()
