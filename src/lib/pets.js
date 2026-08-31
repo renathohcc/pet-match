@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore'
 import { db } from './firebase'
 
 export const PET_STATUSES = {
@@ -38,4 +38,8 @@ export async function getPetById(id) {
 
 export async function updatePetStatus(id, status) {
   await updateDoc(doc(db, 'pets', id), { status })
+}
+
+export async function deletePet(id) {
+  await deleteDoc(doc(db, 'pets', id))
 }
