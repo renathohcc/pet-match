@@ -145,7 +145,13 @@ function Cadastrar() {
         <Helmet>
           <title>Anúncio publicado! — PetMatch</title>
         </Helmet>
-        <ShareCard pet={createdPet} onContinue={() => navigate(`/pet/${createdPet.id}`)} />
+        <ShareCard
+          pet={createdPet}
+          subtitle="Anúncio publicado!"
+          title={`Compartilhe ${createdPet.name} nas redes`}
+          continueLabel="Ver meu anúncio →"
+          onContinue={() => navigate(`/pet/${createdPet.id}`)}
+        />
       </Container>
     )
   }

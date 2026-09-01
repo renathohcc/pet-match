@@ -5,6 +5,7 @@ import Container from '../components/Container'
 import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
+import ShareCard from '../components/ShareCard'
 import { deletePet, getPetById, PET_STATUSES, updatePetStatus } from '../lib/pets'
 import { useAuth } from '../context/useAuth'
 import { useFavorites } from '../context/useFavorites'
@@ -20,6 +21,7 @@ function PetDetail() {
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null) // { type: 'status' | 'delete', value? }
+  const [shareOpen, setShareOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -204,6 +206,10 @@ function PetDetail() {
         </div>
 
         <aside className="sticky top-6">
+          <Button variant="ghost" className="mb-4.5 w-full" onClick={() => setShareOpen(true)}>
+            📤 Compartilhar {pet.name}
+          </Button>
+
           {isOwner && (
             <div className="mb-4.5 rounded-2xl border border-line bg-white p-5.5">
               <h4 className="mb-3 text-[14.5px] font-bold text-blue-deep">Status do anúncio</h4>
@@ -287,6 +293,22 @@ function PetDetail() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmAction(null)}
       />
+
+      {shareOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center">
+          <div className="relative w-full max-w-[460px] rounded-2xl bg-cream p-6 shadow-[0_20px_40px_rgba(22,50,79,.2)]">
+            <button
+              type="button"
+              onClick={() => setShareOpen(false)}
+              className="absolute right-4 top-4 cursor-pointer text-xl text-ink-soft hover:text-blue-deep"
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+            <ShareCard pet={pet} />
+          </div>
+        </div>
+      )}
     </Container>
   )
 }

@@ -18,6 +18,11 @@ const LIGHT_TEXT = {
   logo: '#FBF6EC',
 }
 
+// Nos templates com arte (background != null), a foto do pet é desenhada
+// ATRÁS do PNG do template — o PNG já tem um recorte transparente de verdade
+// no formato exato da moldura (ver scripts que geraram os arquivos em
+// src/assets/share-templates/), então o encaixe nos cantos é sempre perfeito
+// não importa o crop escolhido pelo usuário.
 export const SHARE_TEMPLATES = [
   {
     id: 'quadrado',
@@ -25,6 +30,7 @@ export const SHARE_TEMPLATES = [
     width: 1080,
     height: 1080,
     background: null,
+    slot: { x: 0.06, y: 0.06, w: 0.88, h: 0.58 },
     text: DARK_TEXT,
   },
   {
@@ -33,7 +39,6 @@ export const SHARE_TEMPLATES = [
     width: 1080,
     height: 1920,
     background: bgPaws,
-    // Coordenadas medidas por detecção de pixel da linha da moldura (ver test-share.html)
     slot: { x: 0.1019, y: 0.0599, w: 0.7954, h: 0.6198 },
     text: LIGHT_TEXT,
     // Este template tem patinhas decorativas correndo pelas laterais inteiras e um
@@ -61,6 +66,16 @@ export const SHARE_TEMPLATES = [
   },
 ]
 
+export function getTemplate(templateId) {
+  return SHARE_TEMPLATES.find((t) => t.id === templateId) ?? SHARE_TEMPLATES[0]
+}
+
+/** Proporção (largura/altura) da área da foto — usada como `aspect` do recorte interativo. */
+export function getSlotAspect(templateId) {
+  const { width, height, slot } = getTemplate(templateId)
+  return (slot.w * width) / (slot.h * height)
+}
+
 function loadImage(url) {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -71,9 +86,16 @@ function loadImage(url) {
   })
 }
 
-// Desenha `img` cobrindo o retângulo (x, y, w, h), cropando o excesso
-// (equivalente a object-fit: cover).
-function drawCover(ctx, img, x, y, w, h) {
+// Desenha `img` cobrindo o retângulo de destino (x, y, w, h).
+// Se `cropRect` for passado (em pixels naturais da imagem original, formato
+// do react-easy-crop), desenha exatamente essa região — é o recorte escolhido
+// manualmente pelo usuário. Sem `cropRect`, cai num "cover" automático centralizado.
+function drawPhoto(ctx, img, x, y, w, h, cropRect) {
+  if (cropRect) {
+    ctx.drawImage(img, cropRect.x, cropRect.y, cropRect.width, cropRect.height, x, y, w, h)
+    return
+  }
+
   const imgRatio = img.width / img.height
   const boxRatio = w / h
   let sx, sy, sw, sh
@@ -103,43 +125,6 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-function drawCodeTemplate(ctx, img, pet, width, height, text) {
-  ctx.fillStyle = '#FBF6EC'
-  ctx.fillRect(0, 0, width, height)
-
-  const margin = width * 0.06
-  const photoW = width - margin * 2
-  const photoH = height * 0.58
-  const photoX = margin
-  const photoY = margin
-
-  ctx.save()
-  roundRect(ctx, photoX, photoY, photoW, photoH, width * 0.03)
-  ctx.clip()
-  drawCover(ctx, img, photoX, photoY, photoW, photoH)
-  ctx.restore()
-
-  drawText(ctx, pet, text, photoX, photoY + photoH, width, height, margin, {})
-}
-
-function drawArtTemplate(ctx, bg, img, pet, template) {
-  const { width, height, slot, text } = template
-  ctx.drawImage(bg, 0, 0, width, height)
-
-  const slotX = slot.x * width
-  const slotY = slot.y * height
-  const slotW = slot.w * width
-  const slotH = slot.h * height
-
-  ctx.save()
-  roundRect(ctx, slotX, slotY, slotW, slotH, width * 0.045)
-  ctx.clip()
-  drawCover(ctx, img, slotX, slotY, slotW, slotH)
-  ctx.restore()
-
-  drawText(ctx, pet, text, slotX, slotY + slotH, width, height, width * 0.06, template)
-}
-
 function drawText(ctx, pet, text, textX, photoBottom, width, height, margin, options) {
   const textY = photoBottom + height * 0.07
   const centered = options.textAlign === 'center'
@@ -167,12 +152,12 @@ function drawText(ctx, pet, text, textX, photoBottom, width, height, margin, opt
 }
 
 /**
- * @param {{ pet: { name: string, city: string, image: string }, templateId: string }} params
+ * @param {{ pet: { name: string, city: string, image: string }, templateId: string, cropRect?: {x:number,y:number,width:number,height:number} }} params
  * @returns {Promise<Blob>}
  */
-export async function generateShareImage({ pet, templateId }) {
-  const template = SHARE_TEMPLATES.find((t) => t.id === templateId) ?? SHARE_TEMPLATES[0]
-  const { width, height } = template
+export async function generateShareImage({ pet, templateId, cropRect }) {
+  const template = getTemplate(templateId)
+  const { width, height, slot, text } = template
 
   await document.fonts.ready
   const [img, bg] = await Promise.all([loadImage(pet.image), template.background ? loadImage(template.background) : null])
@@ -182,11 +167,29 @@ export async function generateShareImage({ pet, templateId }) {
   canvas.height = height
   const ctx = canvas.getContext('2d')
 
+  const slotX = slot.x * width
+  const slotY = slot.y * height
+  const slotW = slot.w * width
+  const slotH = slot.h * height
+
   if (bg) {
-    drawArtTemplate(ctx, bg, img, pet, template)
+    // Foto atrás, template (com o recorte transparente) por cima — o encaixe
+    // nos cantos vem 100% do alpha do PNG, não de clipping calculado aqui.
+    ctx.fillStyle = '#FBF6EC'
+    ctx.fillRect(0, 0, width, height)
+    drawPhoto(ctx, img, slotX, slotY, slotW, slotH, cropRect)
+    ctx.drawImage(bg, 0, 0, width, height)
   } else {
-    drawCodeTemplate(ctx, img, pet, width, height, template.text)
+    ctx.fillStyle = '#FBF6EC'
+    ctx.fillRect(0, 0, width, height)
+    ctx.save()
+    roundRect(ctx, slotX, slotY, slotW, slotH, width * 0.03)
+    ctx.clip()
+    drawPhoto(ctx, img, slotX, slotY, slotW, slotH, cropRect)
+    ctx.restore()
   }
+
+  drawText(ctx, pet, text, slotX, slotY + slotH, width, height, width * 0.06, template)
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Falha ao gerar a imagem.'))), 'image/png')
