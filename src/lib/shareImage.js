@@ -1,23 +1,72 @@
 // Gera uma imagem pronta pra compartilhar (Instagram/Facebook/WhatsApp) a
 // partir da foto de capa do pet, já hospedada no Cloudinary. 100% client-side.
+import bgPaws from '../assets/share-templates/template-1.png'
+import bgBotanical from '../assets/share-templates/template-2.png'
+import bgMinimal from '../assets/share-templates/template-3.png'
+
+const DARK_TEXT = {
+  kicker: '#C96A44',
+  name: '#16324F',
+  city: '#5B6470',
+  logo: '#16324F',
+}
+
+const LIGHT_TEXT = {
+  kicker: '#F0A878',
+  name: '#FBF6EC',
+  city: '#C7D5E1',
+  logo: '#FBF6EC',
+}
 
 export const SHARE_TEMPLATES = [
-  { id: 'quadrado', label: 'Quadrado (feed)', width: 1080, height: 1080 },
-  { id: 'story', label: 'Story (vertical)', width: 1080, height: 1920 },
+  {
+    id: 'quadrado',
+    label: 'Quadrado (clássico)',
+    width: 1080,
+    height: 1080,
+    background: null,
+    text: DARK_TEXT,
+  },
+  {
+    id: 'story-patinhas',
+    label: 'Story · Patinhas',
+    width: 1080,
+    height: 1920,
+    background: bgPaws,
+    // Coordenadas medidas por detecção de pixel da linha da moldura (ver test-share.html)
+    slot: { x: 0.1019, y: 0.0599, w: 0.7954, h: 0.6198 },
+    text: LIGHT_TEXT,
+    // Este template tem patinhas decorativas correndo pelas laterais inteiras e um
+    // "rabo de fio" no rodapé — texto centralizado e mais alto evita colidir com elas.
+    textAlign: 'center',
+    logoYRatio: 0.87,
+  },
+  {
+    id: 'story-botanico',
+    label: 'Story · Botânico',
+    width: 1080,
+    height: 1920,
+    background: bgBotanical,
+    slot: { x: 0.1056, y: 0.0703, w: 0.7907, h: 0.6198 },
+    text: DARK_TEXT,
+  },
+  {
+    id: 'story-minimal',
+    label: 'Story · Minimalista',
+    width: 1080,
+    height: 1920,
+    background: bgMinimal,
+    slot: { x: 0.0944, y: 0.0615, w: 0.8157, h: 0.6010 },
+    text: DARK_TEXT,
+  },
 ]
-
-const COLORS = {
-  blueDeep: '#16324F',
-  cream: '#FBF6EC',
-  terracotta: '#C96A44',
-}
 
 function loadImage(url) {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('Não foi possível carregar a foto do pet.'))
+    img.onerror = () => reject(new Error('Não foi possível carregar a imagem.'))
     img.src = url
   })
 }
@@ -54,30 +103,13 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-/**
- * @param {{ pet: { name: string, city: string, image: string }, templateId: string }} params
- * @returns {Promise<Blob>}
- */
-export async function generateShareImage({ pet, templateId }) {
-  const template = SHARE_TEMPLATES.find((t) => t.id === templateId) ?? SHARE_TEMPLATES[0]
-  const { width, height } = template
-
-  await document.fonts.ready
-  const img = await loadImage(pet.image)
-
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-
-  // Fundo
-  ctx.fillStyle = COLORS.cream
+function drawCodeTemplate(ctx, img, pet, width, height, text) {
+  ctx.fillStyle = '#FBF6EC'
   ctx.fillRect(0, 0, width, height)
 
-  // Foto do pet, cropada num cartão arredondado com margem
   const margin = width * 0.06
   const photoW = width - margin * 2
-  const photoH = height * (templateId === 'story' ? 0.62 : 0.58)
+  const photoH = height * 0.58
   const photoX = margin
   const photoY = margin
 
@@ -87,25 +119,74 @@ export async function generateShareImage({ pet, templateId }) {
   drawCover(ctx, img, photoX, photoY, photoW, photoH)
   ctx.restore()
 
-  // Faixa inferior com nome/cidade
-  const textY = photoY + photoH + height * 0.07
-  ctx.fillStyle = COLORS.terracotta
+  drawText(ctx, pet, text, photoX, photoY + photoH, width, height, margin, {})
+}
+
+function drawArtTemplate(ctx, bg, img, pet, template) {
+  const { width, height, slot, text } = template
+  ctx.drawImage(bg, 0, 0, width, height)
+
+  const slotX = slot.x * width
+  const slotY = slot.y * height
+  const slotW = slot.w * width
+  const slotH = slot.h * height
+
+  ctx.save()
+  roundRect(ctx, slotX, slotY, slotW, slotH, width * 0.045)
+  ctx.clip()
+  drawCover(ctx, img, slotX, slotY, slotW, slotH)
+  ctx.restore()
+
+  drawText(ctx, pet, text, slotX, slotY + slotH, width, height, width * 0.06, template)
+}
+
+function drawText(ctx, pet, text, textX, photoBottom, width, height, margin, options) {
+  const textY = photoBottom + height * 0.07
+  const centered = options.textAlign === 'center'
+  ctx.textAlign = centered ? 'center' : 'left'
+  const x = centered ? width / 2 : textX
+
+  ctx.fillStyle = text.kicker
   ctx.font = `600 ${width * 0.032}px 'Source Sans 3', sans-serif`
-  ctx.fillText('ADOÇÃO RESPONSÁVEL', photoX, textY)
+  ctx.fillText('ADOÇÃO RESPONSÁVEL', x, textY)
 
-  ctx.fillStyle = COLORS.blueDeep
+  ctx.fillStyle = text.name
   ctx.font = `600 ${width * 0.085}px 'Fraunces', serif`
-  ctx.fillText(pet.name, photoX, textY + width * 0.09)
+  ctx.fillText(pet.name, x, textY + width * 0.09)
 
-  ctx.fillStyle = '#5B6470'
+  ctx.fillStyle = text.city
   ctx.font = `400 ${width * 0.036}px 'Source Sans 3', sans-serif`
-  ctx.fillText(`📍 ${pet.city}`, photoX, textY + width * 0.135)
+  ctx.fillText(`📍 ${pet.city}`, x, textY + width * 0.135)
 
-  // Wordmark no rodapé
-  const logoY = height - margin * 0.9
-  ctx.fillStyle = COLORS.blueDeep
+  const logoY = options.logoYRatio ? height * options.logoYRatio : height - margin * 0.9
+  ctx.fillStyle = text.logo
   ctx.font = `700 ${width * 0.04}px 'Fraunces', serif`
-  ctx.fillText('♡ PetMatch', photoX, logoY)
+  ctx.fillText('♡ PetMatch', x, logoY)
+
+  ctx.textAlign = 'left'
+}
+
+/**
+ * @param {{ pet: { name: string, city: string, image: string }, templateId: string }} params
+ * @returns {Promise<Blob>}
+ */
+export async function generateShareImage({ pet, templateId }) {
+  const template = SHARE_TEMPLATES.find((t) => t.id === templateId) ?? SHARE_TEMPLATES[0]
+  const { width, height } = template
+
+  await document.fonts.ready
+  const [img, bg] = await Promise.all([loadImage(pet.image), template.background ? loadImage(template.background) : null])
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+
+  if (bg) {
+    drawArtTemplate(ctx, bg, img, pet, template)
+  } else {
+    drawCodeTemplate(ctx, img, pet, width, height, template.text)
+  }
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Falha ao gerar a imagem.'))), 'image/png')
