@@ -6,15 +6,18 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { FavoritesProvider } from './context/FavoritesContext.jsx'
+import { ProfileProvider } from './context/ProfileContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <HelmetProvider>
       <BrowserRouter basename="/pet-match">
         <AuthProvider>
-          <FavoritesProvider>
-            <App />
-          </FavoritesProvider>
+          <ProfileProvider>
+            <FavoritesProvider>
+              <App />
+            </FavoritesProvider>
+          </ProfileProvider>
         </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>

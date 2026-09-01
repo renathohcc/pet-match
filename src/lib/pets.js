@@ -52,6 +52,15 @@ export async function getPetById(id) {
   return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null
 }
 
+/**
+ * Busca vários pets pelo id (ex: lista de favoritos). Ids que não existem
+ * mais (pet excluído) são simplesmente omitidos do resultado.
+ */
+export async function getPetsByIds(ids) {
+  const pets = await Promise.all(ids.map((id) => getPetById(id)))
+  return pets.filter(Boolean)
+}
+
 export async function updatePetStatus(id, status) {
   await updateDoc(doc(db, 'pets', id), { status })
 }

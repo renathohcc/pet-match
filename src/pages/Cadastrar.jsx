@@ -7,7 +7,9 @@ import Button from '../components/Button'
 import { db } from '../lib/firebase'
 import { uploadPetPhoto } from '../lib/cloudinary'
 import { useAuth } from '../context/useAuth'
+import { useProfile } from '../context/useProfile'
 import { CITIES, neighborhoodsForCity } from '../data/locations'
+import { TUTOR_TYPES } from '../lib/users'
 
 const MAX_PHOTOS = 5
 
@@ -43,6 +45,7 @@ const temperamentOptions = ['Dócil', 'Bom com crianças', 'Bom com outros cães
 function Cadastrar() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { profile } = useProfile()
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
@@ -119,8 +122,8 @@ function Cadastrar() {
         thumbs: photoUrls.slice(1),
         status: 'disponivel',
         donorId: user.uid,
-        contactName: user.displayName ?? 'Doador',
-        contactType: 'Doador independente',
+        contactName: profile?.displayName || user.displayName || 'Doador',
+        contactType: TUTOR_TYPES[profile?.tutorType] ?? TUTOR_TYPES.independente,
         createdAt: serverTimestamp(),
       })
 

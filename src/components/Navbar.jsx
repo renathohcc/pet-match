@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import Button from './Button'
 import { useAuth } from '../context/useAuth'
+import { useProfile } from '../context/useProfile'
 
 const navLinks = [
   { to: '/', label: 'Início' },
@@ -10,6 +11,7 @@ const navLinks = [
 
 function Navbar() {
   const { user, loginWithGoogle, logout } = useAuth()
+  const { profile } = useProfile()
 
   return (
     <nav className="mx-auto flex max-w-[1180px] items-center justify-between px-7 py-5">
@@ -36,11 +38,11 @@ function Navbar() {
         {user ? (
           <div className="flex items-center gap-2.5">
             <Link to="/perfil" title="Meu perfil">
-              {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName ?? 'Você'} className="h-8 w-8 rounded-full" />
+              {profile?.photoURL ? (
+                <img src={profile.photoURL} alt={profile.displayName} className="h-8 w-8 rounded-full object-cover" />
               ) : (
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-mid text-sm font-semibold text-white">
-                  {(user.displayName ?? 'U')[0]}
+                  {(profile?.displayName ?? user.displayName ?? 'U')[0]}
                 </span>
               )}
             </Link>

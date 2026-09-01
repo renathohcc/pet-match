@@ -4,13 +4,14 @@ const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 /**
  * Faz upload de uma imagem via preset unsigned do Cloudinary e retorna a URL pública.
  * @param {File} file
+ * @param {string} folder
  * @returns {Promise<string>}
  */
-export async function uploadPetPhoto(file) {
+export async function uploadImage(file, folder = 'pets') {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('upload_preset', UPLOAD_PRESET)
-  formData.append('folder', 'pets')
+  formData.append('folder', folder)
 
   const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
     method: 'POST',
@@ -23,4 +24,12 @@ export async function uploadPetPhoto(file) {
 
   const data = await response.json()
   return data.secure_url
+}
+
+export function uploadPetPhoto(file) {
+  return uploadImage(file, 'pets')
+}
+
+export function uploadProfilePhoto(file) {
+  return uploadImage(file, 'profiles')
 }

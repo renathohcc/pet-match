@@ -23,7 +23,10 @@ service cloud.firestore {
     }
 
     match /pets/{petId} {
-      allow read: if resource.data.status == 'disponivel' || isOwner(resource.data.donorId);
+      // Leitura pública mesmo pra pets em_processo/adotado: nada no doc é
+      // sensível além do que já fica exposto nos disponíveis, e isso evita
+      // permission-denied ao abrir um pet favoritado que mudou de status.
+      allow read: if true;
 
       allow create: if isSignedIn()
         && hasValidPetShape(request.resource.data)
