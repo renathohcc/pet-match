@@ -24,6 +24,15 @@ function PetDetail() {
   const [shareOpen, setShareOpen] = useState(false)
 
   useEffect(() => {
+    if (!shareOpen) return
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setShareOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [shareOpen])
+
+  useEffect(() => {
     let cancelled = false
     // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading ao trocar de pet
     setLoading(true)
@@ -295,12 +304,18 @@ function PetDetail() {
       />
 
       {shareOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center">
-          <div className="relative w-full max-w-[460px] rounded-2xl bg-cream p-6 shadow-[0_20px_40px_rgba(22,50,79,.2)]">
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center"
+          onClick={() => setShareOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-[460px] rounded-2xl bg-cream p-6 shadow-[0_20px_40px_rgba(22,50,79,.2)]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               onClick={() => setShareOpen(false)}
-              className="absolute right-4 top-4 cursor-pointer text-xl text-ink-soft hover:text-blue-deep"
+              className="absolute right-4 top-4 z-10 cursor-pointer rounded-full bg-white/80 px-2.5 py-1 text-xl leading-none text-ink-soft hover:text-blue-deep"
               aria-label="Fechar"
             >
               ×

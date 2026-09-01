@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Cropper from 'react-easy-crop'
 import Button from './Button'
 import Chip from './Chip'
@@ -6,8 +6,9 @@ import { generateShareImage, getSlotAspect, SHARE_TEMPLATES } from '../lib/share
 
 function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLabel, onContinue }) {
   const [templateId, setTemplateId] = useState(SHARE_TEMPLATES[0].id)
-  const [stage, setStage] = useState('crop') // 'crop' | 'preview'
 
+  // Recorte compartilhado entre todos os templates — só a proporção (aspect)
+  // do overlay muda quando troca de template, o zoom/posição escolhidos continuam.
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
@@ -17,44 +18,34 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [shareError, setShareError] = useState(null)
+  // true assim que algo muda (recorte, zoom ou template) depois da última imagem gerada
+  const [dirty, setDirty] = useState(true)
 
-  // Trocar de template pode mudar a proporção do recorte — volta pro passo de recorte.
   function handleTemplateChange(id) {
     setTemplateId(id)
-    setCrop({ x: 0, y: 0 })
-    setZoom(1)
-    setStage('crop')
+    setDirty(true)
   }
 
-  function handleGenerate() {
-    setStage('preview')
+  function handleCropComplete(_, pixels) {
+    setCroppedAreaPixels(pixels)
+    setDirty(true)
   }
 
-  useEffect(() => {
-    if (stage !== 'preview') return
-    let cancelled = false
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading ao gerar
+  async function handleGenerate() {
     setLoading(true)
     setError(null)
 
-    generateShareImage({ pet, templateId, cropRect: croppedAreaPixels })
-      .then((result) => {
-        if (cancelled) return
-        setBlob(result)
-        setPreviewUrl(URL.createObjectURL(result))
-      })
-      .catch(() => {
-        if (!cancelled) setError('Não foi possível gerar a imagem de compartilhamento agora.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
+    try {
+      const result = await generateShareImage({ pet, templateId, cropRect: croppedAreaPixels })
+      setBlob(result)
+      setPreviewUrl(URL.createObjectURL(result))
+      setDirty(false)
+    } catch {
+      setError('Não foi possível gerar a imagem de compartilhamento agora.')
+    } finally {
+      setLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `pet` é estável
-  }, [stage])
+  }
 
   async function handleShare() {
     if (!blob) return
@@ -82,7 +73,9 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
     const link = document.createElement('a')
     link.href = previewUrl
     link.download = `${pet.name}-petmatch.png`
+    document.body.appendChild(link)
     link.click()
+    link.remove()
   }
 
   return (
@@ -102,57 +95,58 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
         ))}
       </div>
 
-      {stage === 'crop' && (
-        <>
-          <p className="mb-3 text-[13px] text-ink-soft">Arraste e use o zoom pra escolher a parte da foto que aparece.</p>
-          <div className="relative mb-5 h-[360px] overflow-hidden rounded-2xl border border-line bg-black/5">
-            <Cropper
-              image={pet.image}
-              crop={crop}
-              zoom={zoom}
-              aspect={getSlotAspect(templateId)}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
-            />
-          </div>
-          <input
-            type="range"
-            min={1}
-            max={3}
-            step={0.01}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="mb-6 w-full accent-blue-deep"
-            aria-label="Zoom"
-          />
-          <Button variant="primary" onClick={handleGenerate} className="w-full">
-            Gerar imagem →
-          </Button>
-        </>
-      )}
+      <p className="mb-3 text-[13px] text-ink-soft">Arraste e use o zoom pra escolher a parte da foto que aparece.</p>
+      <div className="relative mb-5 h-[320px] overflow-hidden rounded-2xl border border-line bg-black/5">
+        <Cropper
+          image={pet.image}
+          crop={crop}
+          zoom={zoom}
+          aspect={getSlotAspect(templateId)}
+          onCropChange={setCrop}
+          onZoomChange={(z) => {
+            setZoom(z)
+            setDirty(true)
+          }}
+          onCropComplete={handleCropComplete}
+        />
+      </div>
+      <input
+        type="range"
+        min={1}
+        max={3}
+        step={0.01}
+        value={zoom}
+        onChange={(e) => {
+          setZoom(Number(e.target.value))
+          setDirty(true)
+        }}
+        className="mb-5 w-full accent-blue-deep"
+        aria-label="Zoom"
+      />
 
-      {stage === 'preview' && (
+      <Button variant="primary" onClick={handleGenerate} disabled={loading} className="mb-6 w-full">
+        {loading ? 'Gerando...' : previewUrl ? 'Atualizar imagem' : 'Gerar imagem →'}
+      </Button>
+
+      {error && <p className="mb-4 text-sm text-terracotta">{error}</p>}
+
+      {previewUrl && (
         <>
-          <div className="mb-6 overflow-hidden rounded-2xl border border-line bg-white">
-            {loading && <div className="flex h-[360px] items-center justify-center text-ink-soft">Gerando imagem...</div>}
-            {error && <div className="flex h-[360px] items-center justify-center px-6 text-terracotta">{error}</div>}
-            {!loading && !error && previewUrl && (
-              <img src={previewUrl} alt={`Card de compartilhamento de ${pet.name}`} className="w-full" />
-            )}
+          <div className={`mb-3 overflow-hidden rounded-2xl border border-line bg-white transition-opacity ${dirty ? 'opacity-40' : ''}`}>
+            <img src={previewUrl} alt={`Card de compartilhamento de ${pet.name}`} className="w-full" />
           </div>
+          {dirty && (
+            <p className="mb-4 text-[13px] text-terracotta">Você mudou o recorte — clique em "Atualizar imagem" acima.</p>
+          )}
 
           {shareError && <p className="mb-4 text-sm text-terracotta">{shareError}</p>}
 
           <div className="flex flex-col gap-2.5">
-            <Button variant="primary" onClick={handleShare} disabled={loading || !!error}>
+            <Button variant="primary" onClick={handleShare} disabled={loading}>
               📤 Compartilhar
             </Button>
-            <Button variant="ghost" onClick={handleDownload} disabled={loading || !!error}>
+            <Button variant="ghost" onClick={handleDownload} disabled={loading}>
               ⬇ Baixar imagem
-            </Button>
-            <Button variant="ghost" onClick={() => setStage('crop')}>
-              ← Ajustar recorte
             </Button>
             {onContinue && (
               <Button variant="ghost" onClick={onContinue}>
