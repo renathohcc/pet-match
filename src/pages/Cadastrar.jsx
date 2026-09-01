@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import Container from '../components/Container'
 import Button from '../components/Button'
+import ShareCard from '../components/ShareCard'
 import { db } from '../lib/firebase'
 import { uploadPetPhoto } from '../lib/cloudinary'
 import { useAuth } from '../context/useAuth'
@@ -49,6 +50,7 @@ function Cadastrar() {
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [createdPet, setCreatedPet] = useState(null)
 
   const [name, setName] = useState('')
   const [species, setSpecies] = useState('cão')
@@ -105,6 +107,7 @@ function Cadastrar() {
         photoUrls.push(await uploadPetPhoto(file))
       }
 
+      const image = photoUrls[0] ?? ''
       const docRef = await addDoc(collection(db, 'pets'), {
         name,
         species,
@@ -118,7 +121,7 @@ function Cadastrar() {
         city,
         neighborhood,
         whatsapp,
-        image: photoUrls[0] ?? '',
+        image,
         thumbs: photoUrls.slice(1),
         status: 'disponivel',
         donorId: user.uid,
@@ -127,7 +130,7 @@ function Cadastrar() {
         createdAt: serverTimestamp(),
       })
 
-      navigate(`/pet/${docRef.id}`)
+      setCreatedPet({ id: docRef.id, name, city, image })
     } catch {
       setSubmitError('Não foi possível publicar o anúncio agora. Verifique os campos e tente novamente.')
       setSubmitting(false)
@@ -135,6 +138,17 @@ function Cadastrar() {
   }
 
   const isLastStep = step === steps.length - 1
+
+  if (createdPet) {
+    return (
+      <Container>
+        <Helmet>
+          <title>Anúncio publicado! — PetMatch</title>
+        </Helmet>
+        <ShareCard pet={createdPet} onContinue={() => navigate(`/pet/${createdPet.id}`)} />
+      </Container>
+    )
+  }
 
   return (
     <Container>
