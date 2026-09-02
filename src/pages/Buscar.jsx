@@ -79,7 +79,7 @@ function Buscar() {
       </div>
 
       <div className="grid grid-cols-1 items-start gap-10 py-7.5 pb-17.5 md:grid-cols-[250px_1fr]">
-        <aside className="sticky top-5 border-t-2 border-blue-deep pt-5">
+        <aside className="border-t-2 border-blue-deep pt-5 md:sticky md:top-5">
           <div className="mb-6.5">
             <h4 className="mb-3 text-[13px] font-bold text-ink">Cidade</h4>
             <div className="flex flex-wrap gap-2">

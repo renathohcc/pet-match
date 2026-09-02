@@ -221,7 +221,7 @@ function PetDetail() {
           </div>
         </div>
 
-        <aside className="sticky top-6">
+        <aside className="md:sticky md:top-6">
           <Button variant="ghost" className="mb-4.5 w-full" onClick={() => setShareOpen(true)}>
             📤 Compartilhar {pet.name}
           </Button>
