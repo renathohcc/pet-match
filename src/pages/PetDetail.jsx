@@ -29,7 +29,14 @@ function PetDetail() {
       if (e.key === 'Escape') setShareOpen(false)
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    // Trava o scroll da página de fundo enquanto o modal está aberto — evita
+    // o celular "confundir" o scroll da página com o scroll interno do modal.
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
   }, [shareOpen])
 
   useEffect(() => {
@@ -305,22 +312,24 @@ function PetDetail() {
 
       {shareOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 sm:items-center"
           onClick={() => setShareOpen(false)}
         >
           <div
-            className="relative w-full max-w-[460px] rounded-2xl bg-cream p-6 shadow-[0_20px_40px_rgba(22,50,79,.2)]"
+            className="relative flex max-h-[85vh] w-full max-w-[460px] flex-col rounded-2xl bg-cream shadow-[0_20px_40px_rgba(22,50,79,.2)]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setShareOpen(false)}
-              className="absolute right-4 top-4 z-10 cursor-pointer rounded-full bg-white/80 px-2.5 py-1 text-xl leading-none text-ink-soft hover:text-blue-deep"
+              className="absolute right-4 top-4 z-10 cursor-pointer rounded-full bg-white/90 px-2.5 py-1 text-xl leading-none text-ink-soft shadow-sm hover:text-blue-deep"
               aria-label="Fechar"
             >
               ×
             </button>
-            <ShareCard pet={pet} />
+            <div className="overflow-y-auto overscroll-contain p-6">
+              <ShareCard pet={pet} />
+            </div>
           </div>
         </div>
       )}
