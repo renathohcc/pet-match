@@ -54,6 +54,8 @@ export const SHARE_TEMPLATES = [
     background: bgBotanical,
     slot: { x: 0.1056, y: 0.0703, w: 0.7907, h: 0.6198 },
     text: DARK_TEXT,
+    // Vasinho decorativo no canto inferior esquerdo — desloca só a logo pra direita.
+    logoXOffsetRatio: 0.09,
   },
   {
     id: 'story-minimal',
@@ -63,6 +65,8 @@ export const SHARE_TEMPLATES = [
     background: bgMinimal,
     slot: { x: 0.0944, y: 0.0615, w: 0.8157, h: 0.6010 },
     text: DARK_TEXT,
+    // A arte tem uma linha divisória bem perto do rodapé — sobe a logo pra não bater nela.
+    logoYRatio: 0.86,
   },
 ]
 
@@ -139,14 +143,16 @@ function drawText(ctx, pet, text, textX, photoBottom, width, height, margin, opt
   ctx.font = `600 ${width * 0.085}px 'Fraunces', serif`
   ctx.fillText(pet.name, x, textY + width * 0.09)
 
+  const location = [pet.neighborhood, pet.city].filter(Boolean).join(', ')
   ctx.fillStyle = text.city
   ctx.font = `400 ${width * 0.036}px 'Source Sans 3', sans-serif`
-  ctx.fillText(`📍 ${pet.city}`, x, textY + width * 0.135)
+  ctx.fillText(`📍 ${location}`, x, textY + width * 0.135)
 
   const logoY = options.logoYRatio ? height * options.logoYRatio : height - margin * 0.9
+  const logoX = centered ? width / 2 : x + width * (options.logoXOffsetRatio ?? 0)
   ctx.fillStyle = text.logo
   ctx.font = `700 ${width * 0.04}px 'Fraunces', serif`
-  ctx.fillText('♡ PetMatch', x, logoY)
+  ctx.fillText('♡ PetMatch', logoX, logoY)
 
   ctx.textAlign = 'left'
 }

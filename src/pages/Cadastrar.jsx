@@ -130,7 +130,7 @@ function Cadastrar() {
         createdAt: serverTimestamp(),
       })
 
-      setCreatedPet({ id: docRef.id, name, city, image })
+      setCreatedPet({ id: docRef.id, name, city, neighborhood, image })
     } catch {
       setSubmitError('Não foi possível publicar o anúncio agora. Verifique os campos e tente novamente.')
       setSubmitting(false)
