@@ -81,10 +81,15 @@ function PetDetail() {
       if (!cancelled) setDonorRating(summary)
     })
 
-    if (pet.adopterId) {
-      getPublicProfile(pet.adopterId).then((profile) => {
-        if (!cancelled) setAdopterName(profile.displayName)
-      })
+    // Perfil do adotante só é lido se tiver alguém logado (a rule de `users`
+    // exige isSignedIn() — visitante anônimo nem pode ler, e nem precisa,
+    // já que o nome só aparece no botão de avaliar, visível pro dono logado).
+    if (pet.adopterId && user) {
+      getPublicProfile(pet.adopterId)
+        .then((profile) => {
+          if (!cancelled) setAdopterName(profile.displayName)
+        })
+        .catch(() => {})
     }
 
     if (pet.status === 'adotado' && pet.adopterId && user) {
