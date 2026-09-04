@@ -6,9 +6,15 @@ import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
 import ShareCard from '../components/ShareCard'
+import AdopterPickerDialog from '../components/AdopterPickerDialog'
+import ReviewDialog from '../components/ReviewDialog'
+import RatingBadge from '../components/RatingBadge'
 import { deletePet, getPetById, PET_STATUSES, updatePetStatus } from '../lib/pets'
 import { useAuth } from '../context/useAuth'
 import { useFavorites } from '../context/useFavorites'
+import { listInterestedUsers, registerInterest } from '../lib/interests'
+import { getReview, getUserRatingSummary, submitReview } from '../lib/reviews'
+import { getPublicProfile } from '../lib/users'
 
 function PetDetail() {
   const { id } = useParams()
@@ -22,6 +28,12 @@ function PetDetail() {
   const [deleting, setDeleting] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null) // { type: 'status' | 'delete' | 'term', value? }
   const [shareOpen, setShareOpen] = useState(false)
+
+  const [adopterPicker, setAdopterPicker] = useState(null) // { interestedUsers: [] } | null
+  const [donorRating, setDonorRating] = useState({ average: 0, count: 0 })
+  const [adopterName, setAdopterName] = useState('')
+  const [reviewTarget, setReviewTarget] = useState(null) // { uid, name, direction } | null
+  const [myReviews, setMyReviews] = useState({ donor_to_adopter: null, adopter_to_donor: null })
 
   useEffect(() => {
     if (!shareOpen) return
@@ -60,6 +72,33 @@ function PetDetail() {
       cancelled = true
     }
   }, [id])
+
+  useEffect(() => {
+    if (!pet) return
+    let cancelled = false
+
+    getUserRatingSummary(pet.donorId).then((summary) => {
+      if (!cancelled) setDonorRating(summary)
+    })
+
+    if (pet.adopterId) {
+      getPublicProfile(pet.adopterId).then((profile) => {
+        if (!cancelled) setAdopterName(profile.displayName)
+      })
+    }
+
+    if (pet.status === 'adotado' && pet.adopterId && user) {
+      Promise.all([getReview(pet.id, 'donor_to_adopter'), getReview(pet.id, 'adopter_to_donor')]).then(
+        ([donorToAdopter, adopterToDonor]) => {
+          if (!cancelled) setMyReviews({ donor_to_adopter: donorToAdopter, adopter_to_donor: adopterToDonor })
+        }
+      )
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [pet, user])
 
   if (loading) {
     return (
@@ -102,7 +141,12 @@ function PetDetail() {
   )}`
 
   const isOwner = user?.uid === pet.donorId
+  const isAdopter = Boolean(user) && user.uid === pet.adopterId
   const isFavorite = favoriteIds.includes(pet.id)
+
+  const canReviewAdopter =
+    isOwner && pet.status === 'adotado' && pet.adopterId && !myReviews.donor_to_adopter
+  const canReviewDonor = isAdopter && pet.status === 'adotado' && !myReviews.adopter_to_donor
 
   function handleFavoriteClick() {
     if (!user) {
@@ -121,8 +165,31 @@ function PetDetail() {
   }
 
   function handleAcceptTerm() {
+    registerInterest(pet.id, user.uid).catch(() => {})
     window.open(whatsappHref, '_blank', 'noopener')
     setConfirmAction(null)
+  }
+
+  async function handleStatusChipClick(value) {
+    if (value === 'adotado') {
+      const interested = await listInterestedUsers(pet.id)
+      if (interested.length > 0) {
+        setAdopterPicker({ interestedUsers: interested })
+        return
+      }
+    }
+    setConfirmAction({ type: 'status', value })
+  }
+
+  async function handleAdopterSelected(adopterId) {
+    setAdopterPicker(null)
+    setUpdatingStatus(true)
+    try {
+      await updatePetStatus(pet.id, 'adotado', adopterId)
+      setPet((prev) => ({ ...prev, status: 'adotado', ...(adopterId ? { adopterId } : {}) }))
+    } finally {
+      setUpdatingStatus(false)
+    }
   }
 
   async function handleStatusChange(status) {
@@ -145,6 +212,30 @@ function PetDetail() {
       setDeleting(false)
       setConfirmAction(null)
     }
+  }
+
+  function openReviewDialog(direction) {
+    if (direction === 'donor_to_adopter') {
+      setReviewTarget({ uid: pet.adopterId, name: adopterName || 'quem adotou', direction })
+    } else {
+      setReviewTarget({ uid: pet.donorId, name: pet.contactName, direction })
+    }
+  }
+
+  async function handleReviewSubmit({ rating, comment }) {
+    await submitReview({
+      petId: pet.id,
+      fromUserId: user.uid,
+      toUserId: reviewTarget.uid,
+      direction: reviewTarget.direction,
+      rating,
+      comment,
+    })
+    setMyReviews((prev) => ({ ...prev, [reviewTarget.direction]: { rating, comment } }))
+    if (reviewTarget.direction === 'adopter_to_donor') {
+      getUserRatingSummary(pet.donorId).then(setDonorRating)
+    }
+    setReviewTarget(null)
   }
 
   const pageTitle = `${pet.name} — ${pet.species === 'cão' ? 'Cão' : 'Gato'} para adoção em ${pet.city} · PetMatch`
@@ -239,6 +330,21 @@ function PetDetail() {
             📤 Compartilhar {pet.name}
           </Button>
 
+          {(canReviewAdopter || canReviewDonor) && (
+            <div className="mb-4.5 rounded-2xl border border-line bg-cream-2 p-5.5 text-center">
+              <p className="mb-3 text-[13.5px] text-ink-soft">
+                {pet.name} foi adotad{article === 'do' ? 'o' : 'a'}! Conta como foi a experiência:
+              </p>
+              <Button
+                variant="terracotta"
+                className="w-full"
+                onClick={() => openReviewDialog(canReviewAdopter ? 'donor_to_adopter' : 'adopter_to_donor')}
+              >
+                ⭐ Avaliar {canReviewAdopter ? adopterName || 'quem adotou' : pet.contactName}
+              </Button>
+            </div>
+          )}
+
           {isOwner && (
             <div className="mb-4.5 rounded-2xl border border-line bg-white p-5.5">
               <h4 className="mb-3 text-[14.5px] font-bold text-blue-deep">Status do anúncio</h4>
@@ -248,7 +354,7 @@ function PetDetail() {
                     key={value}
                     type="button"
                     disabled={updatingStatus}
-                    onClick={() => setConfirmAction({ type: 'status', value })}
+                    onClick={() => handleStatusChipClick(value)}
                     className={`cursor-pointer rounded-full border-[1.3px] px-3.5 py-[7px] text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                       pet.status === value
                         ? 'border-blue-deep bg-blue-deep text-cream'
@@ -278,6 +384,7 @@ function PetDetail() {
                 <div>
                   <div className="text-[15px] font-bold">{pet.contactName}</div>
                   <div className="text-[13px] text-ink-soft">{pet.contactType}</div>
+                  <RatingBadge average={donorRating.average} count={donorRating.count} />
                 </div>
               </div>
               <Button variant="whatsapp" className="mb-2.5 w-full" onClick={handleWhatsAppClick}>
@@ -330,6 +437,21 @@ function PetDetail() {
         confirmLabel="Aceito, continuar →"
         onConfirm={handleAcceptTerm}
         onCancel={() => setConfirmAction(null)}
+      />
+
+      <AdopterPickerDialog
+        open={Boolean(adopterPicker)}
+        petName={pet.name}
+        interestedUsers={adopterPicker?.interestedUsers ?? []}
+        onSelect={handleAdopterSelected}
+        onCancel={() => setAdopterPicker(null)}
+      />
+
+      <ReviewDialog
+        open={Boolean(reviewTarget)}
+        targetName={reviewTarget?.name}
+        onSubmit={handleReviewSubmit}
+        onCancel={() => setReviewTarget(null)}
       />
 
       {shareOpen && (

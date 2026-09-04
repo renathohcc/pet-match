@@ -1,4 +1,4 @@
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
 
 export const TUTOR_TYPES = {
@@ -8,4 +8,12 @@ export const TUTOR_TYPES = {
 
 export async function updateUserProfile(uid, profile) {
   await setDoc(doc(db, 'users', uid), profile, { merge: true })
+}
+
+/** Perfil público mínimo de outro usuário (nome/foto) — ex: pra exibir quem é o adotante. */
+export async function getPublicProfile(uid) {
+  const snapshot = await getDoc(doc(db, 'users', uid))
+  if (!snapshot.exists()) return { displayName: 'Usuário', photoURL: '' }
+  const data = snapshot.data()
+  return { displayName: data.displayName || 'Usuário', photoURL: data.photoURL || '' }
 }

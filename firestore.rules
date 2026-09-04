@@ -40,7 +40,44 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      // Leitura liberada pra qualquer logado: precisamos mostrar nome/foto de
+      // quem demonstrou interesse (pro doador escolher o adotante) e do
+      // adotante/doador na tela de avaliação. Nada sensível fica exposto além
+      // do que já é público via contactName do pet.
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Registro de "cliquei em conversar no WhatsApp" — usado pelo doador pra
+    // escolher quem foi o adotante na hora de marcar o pet como adotado.
+    match /interests/{interestId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Avaliação mútua doador<->adotante, só depois do pet marcado como
+    // adotado e só entre o par real (donorId/adopterId do próprio pet).
+    // Imutável depois de criada (sem update/delete) e pública (reforça
+    // confiança de quem está decidindo contatar um doador).
+    match /reviews/{reviewId} {
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.fromUserId == request.auth.uid
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && (
+          (request.resource.data.direction == 'donor_to_adopter'
+            && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.donorId == request.auth.uid
+            && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.adopterId == request.resource.data.toUserId)
+          ||
+          (request.resource.data.direction == 'adopter_to_donor'
+            && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.adopterId == request.auth.uid
+            && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.donorId == request.resource.data.toUserId)
+        );
+
+      allow update, delete: if false;
     }
   }
 }

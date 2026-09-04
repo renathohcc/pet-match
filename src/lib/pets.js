@@ -61,8 +61,8 @@ export async function getPetsByIds(ids) {
   return pets.filter(Boolean)
 }
 
-export async function updatePetStatus(id, status) {
-  await updateDoc(doc(db, 'pets', id), { status })
+export async function updatePetStatus(id, status, adopterId) {
+  await updateDoc(doc(db, 'pets', id), adopterId ? { status, adopterId } : { status })
 }
 
 export async function deletePet(id) {
