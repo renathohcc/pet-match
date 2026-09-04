@@ -11,6 +11,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == donorId;
     }
 
+    // Admin único do site — pode excluir pets adotados (o dono do anúncio
+    // perde essa permissão depois do "Adotado", ver rule de pets abaixo) e
+    // remover avaliações comprovadamente abusivas após um recurso.
+    function isAdmin() {
+      return isSignedIn() && request.auth.uid == 'vJwhGPjI6eYVyl7XAfMevNKfJHR2';
+    }
+
     function hasValidPetShape(data) {
       return data.keys().hasAll(['name', 'species', 'size', 'sex', 'city', 'status', 'donorId', 'createdAt'])
         && data.name is string && data.name.size() > 0 && data.name.size() <= 60
@@ -36,7 +43,11 @@ service cloud.firestore {
         && hasValidPetShape(request.resource.data)
         && request.resource.data.donorId == resource.data.donorId;
 
-      allow delete: if isOwner(resource.data.donorId);
+      // Pet adotado não pode mais ser excluído pelo próprio doador — evita
+      // apagar o histórico junto de avaliações que já existem sobre a
+      // adoção. Só o admin do site pode remover nesse caso (ex: pedido de
+      // exclusão de dados, spam, etc).
+      allow delete: if isAdmin() || (isOwner(resource.data.donorId) && resource.data.status != 'adotado');
     }
 
     match /users/{userId} {
@@ -77,7 +88,29 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.donorId == request.resource.data.toUserId)
         );
 
-      allow update, delete: if false;
+      allow update: if false;
+      // Avaliação normalmente não é excluída (histórico), mas o admin pode
+      // remover uma comprovadamente abusiva depois de analisar um recurso.
+      allow delete: if isAdmin();
+    }
+
+    // Recurso: quem recebeu uma avaliação pode contestar ela (ex: calúnia,
+    // avaliação sem adoção real). O comentário original fica oculto pro
+    // público enquanto o recurso existe (a nota numérica continua contando,
+    // só o texto livre é escondido) — resolução manual pelo admin por
+    // enquanto (sem painel de moderação ainda).
+    match /reviewDisputes/{reviewId} {
+      // Leitura pública só pra saber "essa avaliação está em recurso" (pra
+      // esconder o comentário de qualquer visitante) — o motivo do recurso
+      // também fica visível, é a versão do lado avaliado sobre o ocorrido.
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.disputedBy == request.auth.uid
+        && get(/databases/$(database)/documents/reviews/$(reviewId)).data.toUserId == request.auth.uid;
+
+      allow update: if false;
+      allow delete: if isAdmin();
     }
   }
 }

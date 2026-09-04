@@ -15,6 +15,7 @@ import { useFavorites } from '../context/useFavorites'
 import { listInterestedUsers, registerInterest } from '../lib/interests'
 import { getReview, getUserRatingSummary, submitReview } from '../lib/reviews'
 import { getPublicProfile } from '../lib/users'
+import { isAdmin } from '../lib/admin'
 
 function PetDetail() {
   const { id } = useParams()
@@ -371,13 +372,19 @@ function PetDetail() {
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setConfirmAction({ type: 'delete' })}
-                className="mt-5 w-full cursor-pointer border-t border-line pt-4 text-left text-[13px] font-semibold text-terracotta transition-colors hover:text-[#a3532f]"
-              >
-                🗑 Excluir anúncio
-              </button>
+              {pet.status === 'adotado' && !isAdmin(user?.uid) ? (
+                <p className="mt-5 border-t border-line pt-4 text-[12.5px] text-ink-soft">
+                  Pets adotados não podem mais ser excluídos, pra preservar o histórico de avaliações.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmAction({ type: 'delete' })}
+                  className="mt-5 w-full cursor-pointer border-t border-line pt-4 text-left text-[13px] font-semibold text-terracotta transition-colors hover:text-[#a3532f]"
+                >
+                  🗑 Excluir anúncio
+                </button>
+              )}
             </div>
           )}
 
