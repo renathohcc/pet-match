@@ -1,6 +1,27 @@
+import { useEffect, useState } from 'react'
 import Button from './Button'
+import RatingBadge from './RatingBadge'
+import { getUserRatingSummary } from '../lib/reviews'
 
 function AdopterPickerDialog({ open, petName, interestedUsers, onSelect, onCancel }) {
+  const [ratings, setRatings] = useState({})
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+
+    Promise.all(
+      interestedUsers.map(async (u) => [u.uid, await getUserRatingSummary(u.uid)])
+    ).then((entries) => {
+      if (!cancelled) setRatings(Object.fromEntries(entries))
+    })
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- interestedUsers é estável enquanto o dialog está aberto
+  }, [open])
+
   if (!open) return null
 
   return (
@@ -11,7 +32,7 @@ function AdopterPickerDialog({ open, petName, interestedUsers, onSelect, onCance
           Escolha entre quem demonstrou interesse — isso libera a avaliação mútua entre vocês depois.
         </p>
 
-        <div className="mb-5 flex max-h-[280px] flex-col gap-2 overflow-y-auto">
+        <div className="mb-5 flex max-h-[320px] flex-col gap-2 overflow-y-auto">
           {interestedUsers.map((u) => (
             <button
               key={u.uid}
@@ -26,7 +47,12 @@ function AdopterPickerDialog({ open, petName, interestedUsers, onSelect, onCance
                   {(u.displayName || 'U')[0]}
                 </span>
               )}
-              <span className="text-[14.5px] font-semibold text-ink">{u.displayName}</span>
+              <span>
+                <span className="block text-[14.5px] font-semibold text-ink">{u.displayName}</span>
+                {ratings[u.uid] && (
+                  <RatingBadge average={ratings[u.uid].average} count={ratings[u.uid].count} />
+                )}
+              </span>
             </button>
           ))}
         </div>

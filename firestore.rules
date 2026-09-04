@@ -40,11 +40,11 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Leitura liberada pra qualquer logado: precisamos mostrar nome/foto de
-      // quem demonstrou interesse (pro doador escolher o adotante) e do
-      // adotante/doador na tela de avaliação. Nada sensível fica exposto além
-      // do que já é público via contactName do pet.
-      allow read: if isSignedIn();
+      // Leitura totalmente pública: a página /usuario/:uid (nome, foto, tipo
+      // de tutor, avaliações) precisa funcionar até pra visitante deslogado,
+      // já que reviews também são públicas. Nada aqui é mais sensível do que
+      // o que já é exposto via contactName do pet.
+      allow read: if true;
       allow write: if isSignedIn() && request.auth.uid == userId;
     }
 

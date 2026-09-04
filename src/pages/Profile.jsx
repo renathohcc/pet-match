@@ -3,9 +3,12 @@ import { Helmet } from 'react-helmet-async'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import { GridPetCard } from '../components/PetCard'
+import RatingBadge from '../components/RatingBadge'
+import ReviewsList from '../components/ReviewsList'
 import { getPetsByIds, listMyPets, PET_STATUSES } from '../lib/pets'
 import { TUTOR_TYPES, updateUserProfile } from '../lib/users'
 import { uploadProfilePhoto } from '../lib/cloudinary'
+import { getUserRatingSummary } from '../lib/reviews'
 import { useAuth } from '../context/useAuth'
 import { useFavorites } from '../context/useFavorites'
 import { useProfile } from '../context/useProfile'
@@ -25,6 +28,8 @@ function Profile() {
   const [favoritePets, setFavoritePets] = useState([])
   const [favoritesLoading, setFavoritesLoading] = useState(true)
   const [favoritesError, setFavoritesError] = useState(null)
+
+  const [rating, setRating] = useState({ average: 0, count: 0, reviews: [] })
 
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
@@ -76,6 +81,16 @@ function Profile() {
       cancelled = true
     }
   }, [favoriteIds])
+
+  useEffect(() => {
+    let cancelled = false
+    getUserRatingSummary(user.uid).then((summary) => {
+      if (!cancelled) setRating(summary)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [user.uid])
 
   function startEditing() {
     setSaveError(null)
@@ -129,6 +144,9 @@ function Profile() {
               <h1 className="font-display text-[28px] text-blue-deep">{profile.displayName}</h1>
               <p className="text-[14.5px] text-ink-soft">{user.email}</p>
               <p className="mt-1 text-[13px] font-semibold text-terracotta">{TUTOR_TYPES[profile.tutorType]}</p>
+              <div className="mt-1">
+                <RatingBadge average={rating.average} count={rating.count} />
+              </div>
             </div>
           </div>
           <Button variant="ghost" onClick={startEditing}>
@@ -235,6 +253,11 @@ function Profile() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="pb-16">
+        <h2 className="mb-6 font-display text-[22px] text-blue-deep">Avaliações que recebi</h2>
+        <ReviewsList reviews={rating.reviews} />
       </section>
     </Container>
   )

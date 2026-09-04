@@ -7,6 +7,7 @@ import Buscar from './pages/Buscar'
 import Cadastrar from './pages/Cadastrar'
 import PetDetail from './pages/PetDetail'
 import Profile from './pages/Profile'
+import PublicProfile from './pages/PublicProfile'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             </RequireAuth>
           }
         />
+        <Route path="/usuario/:uid" element={<PublicProfile />} />
       </Routes>
       <Footer />
     </>

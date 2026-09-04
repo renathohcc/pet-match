@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { doc, onSnapshot } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from './useAuth'
 import { ProfileContext } from './profileContext'
@@ -23,6 +23,22 @@ export function ProfileProvider({ children }) {
         photoURL: data.photoURL ?? user.photoURL ?? '',
         tutorType: data.tutorType ?? 'independente',
       })
+
+      // Primeiro login: ainda não existe doc em users/{uid}, então nome/foto
+      // do Google nunca ficam salvos — outras pessoas (ex: listInterestedUsers,
+      // getPublicProfile) não conseguem ler isso, só o próprio dono via
+      // fallback local. Persiste os dados básicos uma vez pra resolver isso.
+      if (!snapshot.exists()) {
+        setDoc(
+          ref,
+          {
+            displayName: user.displayName ?? '',
+            photoURL: user.photoURL ?? '',
+            tutorType: 'independente',
+          },
+          { merge: true }
+        ).catch(() => {})
+      }
     })
 
     return unsubscribe

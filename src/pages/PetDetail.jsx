@@ -387,7 +387,9 @@ function PetDetail() {
               <div className="my-2.5 mb-5 flex items-center gap-3">
                 <div className="h-11 w-11 flex-shrink-0 rounded-full bg-blue-mid" />
                 <div>
-                  <div className="text-[15px] font-bold">{pet.contactName}</div>
+                  <Link to={`/usuario/${pet.donorId}`} className="text-[15px] font-bold text-ink hover:text-blue-deep hover:underline">
+                    {pet.contactName}
+                  </Link>
                   <div className="text-[13px] text-ink-soft">{pet.contactType}</div>
                   <RatingBadge average={donorRating.average} count={donorRating.count} />
                 </div>
