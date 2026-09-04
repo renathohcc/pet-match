@@ -20,7 +20,7 @@ function PetDetail() {
   const [error, setError] = useState(null)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [confirmAction, setConfirmAction] = useState(null) // { type: 'status' | 'delete', value? }
+  const [confirmAction, setConfirmAction] = useState(null) // { type: 'status' | 'delete' | 'term', value? }
   const [shareOpen, setShareOpen] = useState(false)
 
   useEffect(() => {
@@ -110,6 +110,19 @@ function PetDetail() {
       return
     }
     toggleFavorite(pet.id)
+  }
+
+  function handleWhatsAppClick() {
+    if (!user) {
+      loginWithGoogle()
+      return
+    }
+    setConfirmAction({ type: 'term' })
+  }
+
+  function handleAcceptTerm() {
+    window.open(whatsappHref, '_blank', 'noopener')
+    setConfirmAction(null)
   }
 
   async function handleStatusChange(status) {
@@ -267,15 +280,9 @@ function PetDetail() {
                   <div className="text-[13px] text-ink-soft">{pet.contactType}</div>
                 </div>
               </div>
-              {user ? (
-                <Button as="a" href={whatsappHref} target="_blank" rel="noreferrer" variant="whatsapp" className="mb-2.5 w-full">
-                  💬 Conversar no WhatsApp
-                </Button>
-              ) : (
-                <Button variant="whatsapp" className="mb-2.5 w-full" onClick={() => loginWithGoogle()}>
-                  🔒 Entrar para ver o contato
-                </Button>
-              )}
+              <Button variant="whatsapp" className="mb-2.5 w-full" onClick={handleWhatsAppClick}>
+                {user ? '💬 Conversar no WhatsApp' : '🔒 Entrar para ver o contato'}
+              </Button>
               <Button variant="ghost" className="mb-2.5 w-full" onClick={handleFavoriteClick}>
                 {isFavorite ? '♥ Salvo' : '♡ Salvar'}
               </Button>
@@ -313,6 +320,15 @@ function PetDetail() {
         confirmLabel={deleting ? 'Excluindo...' : 'Excluir'}
         danger
         onConfirm={handleDelete}
+        onCancel={() => setConfirmAction(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmAction?.type === 'term'}
+        title="Antes de conversar"
+        message={`Confirme que você tem condições de tempo, espaço e recursos para cuidar ${article === 'do' ? 'do' : 'da'} ${pet.name}, que a adoção não tem fins de venda, abandono ou maus-tratos, e que sabe que o PetMatch não intermedia nem se responsabiliza pelo acordo — o contato é feito direto com o responsável pelo pet.`}
+        confirmLabel="Aceito, continuar →"
+        onConfirm={handleAcceptTerm}
         onCancel={() => setConfirmAction(null)}
       />
 
