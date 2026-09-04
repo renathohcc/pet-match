@@ -267,9 +267,15 @@ function PetDetail() {
                   <div className="text-[13px] text-ink-soft">{pet.contactType}</div>
                 </div>
               </div>
-              <Button as="a" href={whatsappHref} target="_blank" rel="noreferrer" variant="whatsapp" className="mb-2.5 w-full">
-                💬 Conversar no WhatsApp
-              </Button>
+              {user ? (
+                <Button as="a" href={whatsappHref} target="_blank" rel="noreferrer" variant="whatsapp" className="mb-2.5 w-full">
+                  💬 Conversar no WhatsApp
+                </Button>
+              ) : (
+                <Button variant="whatsapp" className="mb-2.5 w-full" onClick={() => loginWithGoogle()}>
+                  🔒 Entrar para ver o contato
+                </Button>
+              )}
               <Button variant="ghost" className="mb-2.5 w-full" onClick={handleFavoriteClick}>
                 {isFavorite ? '♥ Salvo' : '♡ Salvar'}
               </Button>
