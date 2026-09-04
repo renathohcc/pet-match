@@ -2,12 +2,14 @@ import { Route, Routes } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import RequireAuth from './components/RequireAuth'
+import RequireAdmin from './components/RequireAdmin'
 import Home from './pages/Home'
 import Buscar from './pages/Buscar'
 import Cadastrar from './pages/Cadastrar'
 import PetDetail from './pages/PetDetail'
 import Profile from './pages/Profile'
 import PublicProfile from './pages/PublicProfile'
+import Admin from './pages/Admin'
 
 function App() {
   return (
@@ -34,6 +36,14 @@ function App() {
           }
         />
         <Route path="/usuario/:uid" element={<PublicProfile />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <Admin />
+            </RequireAdmin>
+          }
+        />
       </Routes>
       <Footer />
     </>

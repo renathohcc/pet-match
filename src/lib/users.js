@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
 
 export const TUTOR_TYPES = {
@@ -20,4 +20,10 @@ export async function getPublicProfile(uid) {
     photoURL: data.photoURL || '',
     tutorType: data.tutorType || 'independente',
   }
+}
+
+/** Todos os usuários com perfil no Firestore — usado no painel admin. */
+export async function listAllUsers() {
+  const snapshot = await getDocs(collection(db, 'users'))
+  return snapshot.docs.map((d) => ({ uid: d.id, ...d.data() }))
 }

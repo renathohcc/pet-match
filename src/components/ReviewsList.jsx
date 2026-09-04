@@ -24,7 +24,7 @@ function ReviewsList({ reviews }) {
   const { user } = useAuth()
   const [enriched, setEnriched] = useState([])
   const [loading, setLoading] = useState(true)
-  const [disputeTarget, setDisputeTarget] = useState(null) // { petId, direction } | null
+  const [disputeTarget, setDisputeTarget] = useState(null) // review object | null
 
   useEffect(() => {
     let cancelled = false
@@ -53,8 +53,8 @@ function ReviewsList({ reviews }) {
   }, [reviews])
 
   async function handleDisputeSubmit(reason) {
-    const { petId, direction } = disputeTarget
-    await disputeReview(petId, direction, user.uid, reason)
+    const { petId, direction, fromUserId, toUserId, rating, comment } = disputeTarget
+    await disputeReview({ petId, direction, disputedBy: user.uid, reason, review: { fromUserId, toUserId, rating, comment } })
     setEnriched((prev) =>
       prev.map((r) =>
         r.petId === petId && r.direction === direction ? { ...r, dispute: { disputedBy: user.uid, reason } } : r
@@ -117,7 +117,7 @@ function ReviewsList({ reviews }) {
               {canDispute && (
                 <button
                   type="button"
-                  onClick={() => setDisputeTarget({ petId: review.petId, direction: review.direction })}
+                  onClick={() => setDisputeTarget(review)}
                   className="cursor-pointer text-[12px] font-semibold text-terracotta hover:underline"
                 >
                   🚩 Recorrer

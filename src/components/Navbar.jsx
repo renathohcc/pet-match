@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import Button from './Button'
 import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
+import { isAdmin } from '../lib/admin'
 
 const navLinks = [
   { to: '/', label: 'Início' },
@@ -37,6 +38,11 @@ function Navbar() {
       <div className="flex items-center gap-3.5">
         {user ? (
           <div className="flex items-center gap-2.5">
+            {isAdmin(user.uid) && (
+              <Link to="/admin" className="text-[13px] font-semibold text-terracotta hover:underline">
+                Admin
+              </Link>
+            )}
             <Link to="/perfil" title="Meu perfil">
               {profile?.photoURL ? (
                 <img src={profile.photoURL} alt={profile.displayName} className="h-8 w-8 rounded-full object-cover" />
