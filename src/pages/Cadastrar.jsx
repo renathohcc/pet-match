@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import ShareCard from '../components/ShareCard'
@@ -11,6 +11,7 @@ import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
 import { CITIES, neighborhoodsForCity } from '../data/locations'
 import { TUTOR_TYPES } from '../lib/users'
+import { generateUniquePetSlug } from '../lib/slug'
 
 const MAX_PHOTOS = 5
 
@@ -108,7 +109,11 @@ function Cadastrar() {
       }
 
       const image = photoUrls[0] ?? ''
-      const docRef = await addDoc(collection(db, 'pets'), {
+      const contactName = profile?.displayName || user.displayName || 'Doador'
+      const contactType = TUTOR_TYPES[profile?.tutorType] ?? TUTOR_TYPES.independente
+      const petId = await generateUniquePetSlug(name)
+
+      await setDoc(doc(db, 'pets', petId), {
         name,
         species,
         age,
@@ -125,12 +130,12 @@ function Cadastrar() {
         thumbs: photoUrls.slice(1),
         status: 'disponivel',
         donorId: user.uid,
-        contactName: profile?.displayName || user.displayName || 'Doador',
-        contactType: TUTOR_TYPES[profile?.tutorType] ?? TUTOR_TYPES.independente,
+        contactName,
+        contactType,
         createdAt: serverTimestamp(),
       })
 
-      setCreatedPet({ id: docRef.id, name, city, neighborhood, image })
+      setCreatedPet({ id: petId, name, city, neighborhood, image, contactName, whatsapp })
     } catch {
       setSubmitError('Não foi possível publicar o anúncio agora. Verifique os campos e tente novamente.')
       setSubmitting(false)

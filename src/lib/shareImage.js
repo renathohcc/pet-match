@@ -1,41 +1,20 @@
 // Gera uma imagem pronta pra compartilhar (Instagram/Facebook/WhatsApp) a
 // partir da foto de capa do pet, já hospedada no Cloudinary. 100% client-side.
-// Sem arte de fundo — só o card/story desenhado por código, com opções de cor.
 
 export const SHARE_FORMATS = [
   { id: 'quadrado', label: 'Quadrado', width: 1080, height: 1080 },
   { id: 'story', label: 'Story', width: 1080, height: 1920 },
 ]
 
-export const COLOR_THEMES = [
-  {
-    id: 'creme',
-    label: 'Creme',
-    bg: '#FBF6EC',
-    text: { kicker: '#C96A44', name: '#16324F', city: '#5B6470', logo: '#16324F' },
-  },
-  {
-    id: 'azul',
-    label: 'Azul petróleo',
-    bg: '#16324F',
-    text: { kicker: '#F0A878', name: '#FBF6EC', city: '#C7D5E1', logo: '#FBF6EC' },
-  },
-  {
-    id: 'terracota',
-    label: 'Terracota',
-    bg: '#C96A44',
-    text: { kicker: '#FBF6EC', name: '#FBF6EC', city: '#F8E4DA', logo: '#FBF6EC' },
-  },
-]
+const THEME = {
+  bg: '#FBF6EC',
+  text: { kicker: '#C96A44', name: '#16324F', city: '#5B6470', contact: '#5B6470', logo: '#16324F' },
+}
 
 const SLOT = { x: 0.06, y: 0.06, w: 0.88, h: 0.58 }
 
 export function getFormat(formatId) {
   return SHARE_FORMATS.find((f) => f.id === formatId) ?? SHARE_FORMATS[0]
-}
-
-export function getTheme(themeId) {
-  return COLOR_THEMES.find((t) => t.id === themeId) ?? COLOR_THEMES[0]
 }
 
 /** Proporção (largura/altura) da área da foto — usada como `aspect` do recorte interativo. */
@@ -93,7 +72,7 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-function drawText(ctx, pet, text, textX, photoBottom, width, height, margin) {
+function drawText(ctx, pet, text, textX, photoBottom, width, height, margin, includeContact) {
   const textY = photoBottom + height * 0.07
 
   ctx.fillStyle = text.kicker
@@ -109,18 +88,23 @@ function drawText(ctx, pet, text, textX, photoBottom, width, height, margin) {
   ctx.font = `400 ${width * 0.036}px 'Source Sans 3', sans-serif`
   ctx.fillText(`📍 ${location}`, textX, textY + width * 0.135)
 
+  if (includeContact && pet.contactName && pet.whatsapp) {
+    ctx.fillStyle = text.contact
+    ctx.font = `600 ${width * 0.028}px 'Source Sans 3', sans-serif`
+    ctx.fillText(`Doador: ${pet.contactName} · Contato: ${pet.whatsapp}`, textX, textY + width * 0.178)
+  }
+
   ctx.fillStyle = text.logo
   ctx.font = `700 ${width * 0.04}px 'Fraunces', serif`
   ctx.fillText('♡ PetMatch', textX, height - margin * 0.9)
 }
 
 /**
- * @param {{ pet: { name: string, city: string, neighborhood?: string, image: string }, formatId: string, themeId: string, cropRect?: {x:number,y:number,width:number,height:number} }} params
+ * @param {{ pet: { name: string, city: string, neighborhood?: string, image: string, contactName?: string, whatsapp?: string }, formatId: string, cropRect?: {x:number,y:number,width:number,height:number}, includeContact?: boolean }} params
  * @returns {Promise<Blob>}
  */
-export async function generateShareImage({ pet, formatId, themeId, cropRect }) {
+export async function generateShareImage({ pet, formatId, cropRect, includeContact = false }) {
   const { width, height } = getFormat(formatId)
-  const theme = getTheme(themeId)
 
   await document.fonts.ready
   const img = await loadImage(pet.image)
@@ -136,7 +120,7 @@ export async function generateShareImage({ pet, formatId, themeId, cropRect }) {
   const slotH = SLOT.h * height
   const margin = width * 0.06
 
-  ctx.fillStyle = theme.bg
+  ctx.fillStyle = THEME.bg
   ctx.fillRect(0, 0, width, height)
 
   ctx.save()
@@ -145,7 +129,7 @@ export async function generateShareImage({ pet, formatId, themeId, cropRect }) {
   drawPhoto(ctx, img, slotX, slotY, slotW, slotH, cropRect)
   ctx.restore()
 
-  drawText(ctx, pet, theme.text, slotX, slotY + slotH, width, height, margin)
+  drawText(ctx, pet, THEME.text, slotX, slotY + slotH, width, height, margin, includeContact)
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Falha ao gerar a imagem.'))), 'image/png')

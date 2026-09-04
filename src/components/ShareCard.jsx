@@ -2,11 +2,16 @@ import { useState } from 'react'
 import Cropper from 'react-easy-crop'
 import Button from './Button'
 import Chip from './Chip'
-import { COLOR_THEMES, generateShareImage, getSlotAspect, SHARE_FORMATS } from '../lib/shareImage'
+import { generateShareImage, getSlotAspect, SHARE_FORMATS } from '../lib/shareImage'
+
+function getPetUrl(petId) {
+  return `${window.location.origin}/pet-match/pet/${petId}`
+}
 
 function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLabel, onContinue }) {
   const [formatId, setFormatId] = useState(SHARE_FORMATS[0].id)
-  const [themeId, setThemeId] = useState(COLOR_THEMES[0].id)
+  const canIncludeContact = Boolean(pet.contactName && pet.whatsapp)
+  const [includeContact, setIncludeContact] = useState(false)
 
   // Recorte compartilhado entre os formatos — só a proporção (aspect) do
   // overlay muda quando troca de formato, o zoom/posição escolhidos continuam.
@@ -19,7 +24,7 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [shareError, setShareError] = useState(null)
-  // true assim que algo muda (recorte, zoom, formato ou cor) depois da última imagem gerada
+  // true assim que algo muda (recorte, zoom, formato ou contato) depois da última imagem gerada
   const [dirty, setDirty] = useState(true)
 
   function handleFormatChange(id) {
@@ -27,8 +32,8 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
     setDirty(true)
   }
 
-  function handleThemeChange(id) {
-    setThemeId(id)
+  function handleContactToggle() {
+    setIncludeContact((prev) => !prev)
     setDirty(true)
   }
 
@@ -42,7 +47,7 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
     setError(null)
 
     try {
-      const result = await generateShareImage({ pet, formatId, themeId, cropRect: croppedAreaPixels })
+      const result = await generateShareImage({ pet, formatId, cropRect: croppedAreaPixels, includeContact })
       setBlob(result)
       setPreviewUrl(URL.createObjectURL(result))
       setDirty(false)
@@ -57,13 +62,17 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
     if (!blob) return
     setShareError(null)
     const file = new File([blob], `${pet.name}-petmatch.png`, { type: 'image/png' })
+    // O campo `url` da Web Share API é ignorado por vários apps (WhatsApp incluso)
+    // quando `files` também é enviado — por isso o link vai dentro do texto, que
+    // WhatsApp/Instagram linkificam automaticamente.
+    const text = `Conheça ${pet.name} no PetMatch, em ${pet.city}! ${getPetUrl(pet.id)}`
 
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({
           files: [file],
           title: `${pet.name} está esperando por um lar — PetMatch`,
-          text: `Conheça ${pet.name} no PetMatch, em ${pet.city}!`,
+          text,
         })
       } catch (err) {
         if (err.name !== 'AbortError') setShareError('Não foi possível abrir o compartilhamento. Tente baixar a imagem.')
@@ -93,24 +102,20 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
         {pet.name} encontra um lar.
       </p>
 
-      <div className="mb-3 flex flex-wrap justify-center gap-2">
+      <div className="mb-5 flex flex-wrap justify-center gap-2">
         {SHARE_FORMATS.map((f) => (
           <Chip key={f.id} active={formatId === f.id} onClick={() => handleFormatChange(f.id)}>
             {f.label}
           </Chip>
         ))}
       </div>
-      <div className="mb-5 flex flex-wrap justify-center gap-2">
-        {COLOR_THEMES.map((t) => (
-          <Chip key={t.id} active={themeId === t.id} onClick={() => handleThemeChange(t.id)}>
-            <span
-              className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full align-middle"
-              style={{ background: t.bg }}
-            />
-            {t.label}
-          </Chip>
-        ))}
-      </div>
+
+      {canIncludeContact && (
+        <label className="mb-5 flex cursor-pointer items-center justify-center gap-2.5 text-[13.5px] text-ink-soft">
+          <input type="checkbox" checked={includeContact} onChange={handleContactToggle} className="h-4 w-4" />
+          Mostrar meu nome e contato no cartão
+        </label>
+      )}
 
       <p className="mb-3 text-[13px] text-ink-soft">Arraste e use o zoom pra escolher a parte da foto que aparece.</p>
       <div className="relative mb-5 h-[320px] overflow-hidden rounded-2xl border border-line bg-black/5">
