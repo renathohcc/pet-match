@@ -8,12 +8,14 @@ import { getSiteStats } from '../lib/adminStats'
 import { listAllUsers, getPublicProfile, TUTOR_TYPES } from '../lib/users'
 import { listMyPets } from '../lib/pets'
 import { deleteReview, getUserRatingSummary, listAllDisputes, listAllReviews, rejectDispute, upholdDispute } from '../lib/reviews'
+import { listAllReports, resolveReport, REPORT_REASONS } from '../lib/reports'
 
 const TABS = [
   { id: 'metrics', label: '📊 Métricas' },
   { id: 'users', label: '👤 Usuários' },
   { id: 'reviews', label: '⭐ Avaliações' },
   { id: 'disputes', label: '🚩 Recursos' },
+  { id: 'reports', label: '📣 Denúncias' },
 ]
 
 function StatCard({ label, value }) {
@@ -277,6 +279,79 @@ function DisputesTab() {
   )
 }
 
+function ReportsTab() {
+  const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [confirmTarget, setConfirmTarget] = useState(null)
+
+  useEffect(() => {
+    loadReports()
+  }, [])
+
+  function loadReports() {
+    setLoading(true)
+    listAllReports().then(async (list) => {
+      const enriched = await Promise.all(
+        list.map(async (r) => {
+          const reporter = await getPublicProfile(r.reportedBy)
+          return { ...r, reporterName: reporter.displayName }
+        })
+      )
+      setReports(enriched)
+      setLoading(false)
+    })
+  }
+
+  async function handleResolve() {
+    await resolveReport(confirmTarget.id)
+    setConfirmTarget(null)
+    loadReports()
+  }
+
+  if (loading) return <p className="text-ink-soft">Carregando denúncias...</p>
+  if (reports.length === 0) return <p className="text-ink-soft">Nenhuma denúncia em aberto. 🎉</p>
+
+  return (
+    <div className="flex flex-col gap-3">
+      {reports.map((r) => (
+        <div key={r.id} className="rounded-xl border border-terracotta/40 bg-cream-2 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-[13.5px]">
+              <strong className="text-ink">{r.reporterName}</strong>
+              <span className="text-ink-soft"> denunciou </span>
+              {r.petId ? (
+                <Link to={`/pet/${r.petId}`} className="font-semibold text-blue-mid hover:underline">
+                  {r.petName || r.petId}
+                </Link>
+              ) : (
+                <strong className="text-ink">{r.petName || 'anúncio sem referência'}</strong>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-2 text-[12px] font-semibold text-terracotta">{REPORT_REASONS[r.reason] ?? r.reason}</div>
+          {r.details && <p className="mt-1 text-[13.5px] text-ink-soft">{r.details}</p>}
+
+          <div className="mt-3 flex justify-end">
+            <Button variant="ghost" onClick={() => setConfirmTarget(r)}>
+              Marcar como resolvida
+            </Button>
+          </div>
+        </div>
+      ))}
+
+      <ConfirmDialog
+        open={Boolean(confirmTarget)}
+        title="Marcar denúncia como resolvida"
+        message="A denúncia será removida da lista. Confirma que já foi analisada?"
+        confirmLabel="Confirmar"
+        onConfirm={handleResolve}
+        onCancel={() => setConfirmTarget(null)}
+      />
+    </div>
+  )
+}
+
 function Admin() {
   const [tab, setTab] = useState('metrics')
 
@@ -312,6 +387,7 @@ function Admin() {
         {tab === 'users' && <UsersTab />}
         {tab === 'reviews' && <ReviewsTab />}
         {tab === 'disputes' && <DisputesTab />}
+        {tab === 'reports' && <ReportsTab />}
       </div>
     </Container>
   )

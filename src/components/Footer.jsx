@@ -25,15 +25,15 @@ function Footer() {
             <h4 className="mb-3.5 text-sm font-semibold text-white">Sobre</h4>
             <ul className="flex flex-col gap-2.5 text-sm">
               <li><Link to="/#confianca">Adoção responsável</Link></li>
-              <li><a href="#">Dúvidas frequentes</a></li>
-              <li><a href="#">Denunciar anúncio</a></li>
+              <li><Link to="/duvidas-frequentes">Dúvidas frequentes</Link></li>
+              <li><Link to="/denunciar">Denunciar anúncio</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="mb-3.5 text-sm font-semibold text-white">Redes</h4>
             <ul className="flex flex-col gap-2.5 text-sm">
-              <li><a href="#">Instagram</a></li>
-              <li><a href="#">Facebook</a></li>
+              <li><a href="https://www.instagram.com/petmatchthe/" target="_blank" rel="noreferrer">Instagram</a></li>
+              <li><a href="https://www.facebook.com/share/1D86Q4XTJ1/?mibextid=wwXIfr" target="_blank" rel="noreferrer">Facebook</a></li>
             </ul>
           </div>
         </div>

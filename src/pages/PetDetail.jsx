@@ -410,6 +410,11 @@ function PetDetail() {
               <div className="mt-4 border-t border-line pt-4 text-[12.5px] leading-relaxed text-ink-soft">
                 O contato é feito direto com {pet.contactName.split(' ')[0]}. O PetMatch não intermedia a adoção nem
                 cobra taxas — desconfie de qualquer cobrança pedida antes do encontro.
+                <div className="mt-2">
+                  <Link to={`/denunciar?petId=${pet.id}&petName=${encodeURIComponent(pet.name)}`} className="text-terracotta hover:underline">
+                    🚩 Denunciar este anúncio
+                  </Link>
+                </div>
               </div>
             </div>
           )}

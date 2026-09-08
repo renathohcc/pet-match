@@ -10,6 +10,8 @@ import PetDetail from './pages/PetDetail'
 import Profile from './pages/Profile'
 import PublicProfile from './pages/PublicProfile'
 import Admin from './pages/Admin'
+import DuvidasFrequentes from './pages/DuvidasFrequentes'
+import Denunciar from './pages/Denunciar'
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
           }
         />
         <Route path="/usuario/:uid" element={<PublicProfile />} />
+        <Route path="/duvidas-frequentes" element={<DuvidasFrequentes />} />
+        <Route path="/denunciar" element={<Denunciar />} />
         <Route
           path="/admin"
           element={

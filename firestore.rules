@@ -112,5 +112,15 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if isAdmin();
     }
+
+    // Denúncia de anúncio (link "Denunciar anúncio" no rodapé/página do pet).
+    // Só leitura/exclusão pelo admin (moderação); qualquer usuário logado
+    // pode criar, só sobre si mesmo (reportedBy == uid), sem poder editar
+    // ou apagar depois de enviada.
+    match /reports/{reportId} {
+      allow read, delete: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.reportedBy == request.auth.uid;
+      allow update: if false;
+    }
   }
 }
