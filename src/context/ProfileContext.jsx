@@ -22,9 +22,11 @@ export function ProfileProvider({ children }) {
         displayName: data.displayName ?? user.displayName ?? '',
         photoURL: data.photoURL ?? user.photoURL ?? '',
         tutorType: data.tutorType ?? 'independente',
-        // Usuário sem esse campo é de antes do onboarding existir — não faz
-        // sentido forçar quem já usa o site a passar por ele retroativamente.
-        onboarded: data.onboarded ?? true,
+        // Doc já existe mas sem esse campo = usuário de antes do onboarding
+        // existir, não forçamos passar por ele retroativamente. Doc ainda
+        // não existe (snapshot.exists() false) = login novo de verdade,
+        // trata como pendente até o setDoc abaixo confirmar onboarded: false.
+        onboarded: snapshot.exists() ? data.onboarded ?? true : false,
       })
 
       // Primeiro login: ainda não existe doc em users/{uid}, então nome/foto
