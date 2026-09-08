@@ -53,7 +53,6 @@ function MetricsTab() {
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       <StatCard label="Pets cadastrados (total)" value={stats.totalPets} />
       <StatCard label="Disponíveis" value={stats.petsByStatus.disponivel} />
-      <StatCard label="Em processo" value={stats.petsByStatus.em_processo} />
       <StatCard label="Adotados" value={stats.petsByStatus.adotado} />
       <StatCard label="Usuários cadastrados" value={stats.totalUsers} />
       <StatCard label="Avaliações" value={stats.totalReviews} />

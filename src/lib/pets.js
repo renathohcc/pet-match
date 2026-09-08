@@ -3,7 +3,6 @@ import { db } from './firebase'
 
 export const PET_STATUSES = {
   disponivel: 'Disponível',
-  em_processo: 'Em processo',
   adotado: 'Adotado',
 }
 

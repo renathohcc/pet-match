@@ -25,7 +25,7 @@ service cloud.firestore {
         && data.size in ['Pequeno', 'Médio', 'Grande']
         && data.sex in ['Macho', 'Fêmea']
         && data.city is string && data.city.size() > 0
-        && data.status in ['disponivel', 'em_processo', 'adotado']
+        && data.status in ['disponivel', 'adotado']
         && data.donorId is string;
     }
 

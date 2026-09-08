@@ -21,7 +21,7 @@ const FAQ = [
   },
   {
     q: 'Como marco meu anúncio como adotado?',
-    a: 'Na página do pet ou em "Meu perfil", altere o status do anúncio para "Em processo" ou "Adotado". Depois de marcado como adotado, você pode registrar quem foi a pessoa adotante para liberar as avaliações mútuas.',
+    a: 'Na página do pet, altere o status do anúncio para "Adotado". Nesse momento você pode registrar quem foi a pessoa adotante para liberar as avaliações mútuas.',
   },
   {
     q: 'Vi um anúncio suspeito ou um caso de maus-tratos. O que eu faço?',
