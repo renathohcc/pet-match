@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Button from './Button'
+import AvatarCropDialog from './AvatarCropDialog'
 import { TUTOR_TYPES } from '../lib/users'
 import { uploadProfilePhoto } from '../lib/cloudinary'
 
@@ -24,8 +25,21 @@ function ProfileForm({
   const [photoFile, setPhotoFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [cropSrc, setCropSrc] = useState(null)
 
   const previewURL = photoFile ? URL.createObjectURL(photoFile) : initialPhotoURL
+
+  function handlePhotoChange(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setCropSrc(URL.createObjectURL(file))
+  }
+
+  function handleCropped(croppedFile) {
+    setPhotoFile(croppedFile)
+    setCropSrc(null)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -53,12 +67,7 @@ function ProfileForm({
         )}
         <label className="cursor-pointer text-[13.5px] font-semibold text-blue-mid">
           Trocar foto
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-          />
+          <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
         </label>
       </div>
 
@@ -99,6 +108,10 @@ function ProfileForm({
           {saving ? 'Salvando...' : submitLabel}
         </Button>
       </div>
+
+      {cropSrc && (
+        <AvatarCropDialog imageSrc={cropSrc} onCropped={handleCropped} onCancel={() => setCropSrc(null)} />
+      )}
     </form>
   )
 }
