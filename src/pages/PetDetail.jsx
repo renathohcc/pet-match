@@ -20,7 +20,7 @@ import { isAdmin } from '../lib/admin'
 function PetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user, loginWithGoogle } = useAuth()
+  const { user } = useAuth()
   const { favoriteIds, toggleFavorite } = useFavorites()
   const [pet, setPet] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -156,7 +156,7 @@ function PetDetail() {
 
   function handleFavoriteClick() {
     if (!user) {
-      loginWithGoogle()
+      navigate(`/entrar?redirectTo=${encodeURIComponent(`/pet/${id}`)}`)
       return
     }
     toggleFavorite(pet.id)
@@ -164,7 +164,7 @@ function PetDetail() {
 
   function handleWhatsAppClick() {
     if (!user) {
-      loginWithGoogle()
+      navigate(`/entrar?redirectTo=${encodeURIComponent(`/pet/${id}`)}`)
       return
     }
     setConfirmAction({ type: 'term' })

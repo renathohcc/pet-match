@@ -1,3 +1,4 @@
+import { Link, useLocation } from 'react-router-dom'
 import Container from './Container'
 import Button from './Button'
 import { useAuth } from '../context/useAuth'
@@ -7,7 +8,8 @@ function RequireAuth({
   title = 'Entre para cadastrar um pet',
   message = 'Pra garantir que cada anúncio tenha um responsável de verdade, o cadastro de pets exige login. Navegar e adotar continuam livres, sem precisar entrar.',
 }) {
-  const { user, loading, loginWithGoogle } = useAuth()
+  const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -23,8 +25,8 @@ function RequireAuth({
         <div className="mx-auto max-w-[420px] py-20 text-center">
           <h1 className="mb-3 font-display text-2xl text-blue-deep">{title}</h1>
           <p className="mb-6 text-ink-soft">{message}</p>
-          <Button variant="primary" onClick={() => loginWithGoogle()}>
-            Entrar com Google
+          <Button as={Link} to={`/entrar?redirectTo=${encodeURIComponent(location.pathname)}`} variant="primary">
+            Entrar
           </Button>
         </div>
       </Container>

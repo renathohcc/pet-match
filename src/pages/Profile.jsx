@@ -2,19 +2,16 @@ import { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import Container from '../components/Container'
 import Button from '../components/Button'
+import ProfileForm from '../components/ProfileForm'
 import { GridPetCard } from '../components/PetCard'
 import RatingBadge from '../components/RatingBadge'
 import ReviewsList from '../components/ReviewsList'
 import { getPetsByIds, listMyPets, PET_STATUSES } from '../lib/pets'
 import { TUTOR_TYPES, updateUserProfile } from '../lib/users'
-import { uploadProfilePhoto } from '../lib/cloudinary'
 import { getUserRatingSummary } from '../lib/reviews'
 import { useAuth } from '../context/useAuth'
 import { useFavorites } from '../context/useFavorites'
 import { useProfile } from '../context/useProfile'
-
-const fieldClass =
-  'w-full rounded-[10px] border-[1.4px] border-line bg-white px-3.5 py-3 font-sans text-[15px] text-ink'
 
 function Profile() {
   const { user } = useAuth()
@@ -32,11 +29,6 @@ function Profile() {
   const [rating, setRating] = useState({ average: 0, count: 0, reviews: [] })
 
   const [editing, setEditing] = useState(false)
-  const [editName, setEditName] = useState('')
-  const [editTutorType, setEditTutorType] = useState('independente')
-  const [editPhotoFile, setEditPhotoFile] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -92,28 +84,9 @@ function Profile() {
     }
   }, [user.uid])
 
-  function startEditing() {
-    setSaveError(null)
-    setEditPhotoFile(null)
-    setEditName(profile.displayName)
-    setEditTutorType(profile.tutorType)
-    setEditing(true)
-  }
-
-  async function handleSaveProfile(e) {
-    e.preventDefault()
-    setSaving(true)
-    setSaveError(null)
-
-    try {
-      const photoURL = editPhotoFile ? await uploadProfilePhoto(editPhotoFile) : profile.photoURL
-      await updateUserProfile(user.uid, { displayName: editName, tutorType: editTutorType, photoURL })
-      setEditing(false)
-    } catch {
-      setSaveError('Não foi possível salvar as alterações agora. Tente novamente.')
-    } finally {
-      setSaving(false)
-    }
+  async function handleSaveProfile(profileData) {
+    await updateUserProfile(user.uid, profileData)
+    setEditing(false)
   }
 
   if (!profile) {
@@ -149,72 +122,22 @@ function Profile() {
               </div>
             </div>
           </div>
-          <Button variant="ghost" onClick={startEditing}>
+          <Button variant="ghost" onClick={() => setEditing(true)}>
             ✎ Editar perfil
           </Button>
         </div>
       ) : (
-        <form onSubmit={handleSaveProfile} className="mx-auto max-w-[480px] pb-2 pt-9">
+        <div className="mx-auto max-w-[480px] pb-2 pt-9">
           <h1 className="mb-6 font-display text-2xl text-blue-deep">Editar perfil</h1>
-
-          <div className="mb-5 flex items-center gap-4">
-            {(editPhotoFile ? URL.createObjectURL(editPhotoFile) : profile.photoURL) ? (
-              <img
-                src={editPhotoFile ? URL.createObjectURL(editPhotoFile) : profile.photoURL}
-                alt=""
-                className="h-16 w-16 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-mid text-xl font-semibold text-white">
-                {(editName || 'U')[0]}
-              </span>
-            )}
-            <label className="cursor-pointer text-[13.5px] font-semibold text-blue-mid">
-              Trocar foto
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => setEditPhotoFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-          </div>
-
-          <div className="mb-4">
-            <label className="mb-1.5 block text-[13.5px] font-semibold text-ink">Nome de exibição</label>
-            <input className={fieldClass} value={editName} onChange={(e) => setEditName(e.target.value)} required />
-          </div>
-
-          <div className="mb-6">
-            <label className="mb-1.5 block text-[13.5px] font-semibold text-ink">Você é...</label>
-            <div className="flex flex-wrap gap-2.5">
-              {Object.entries(TUTOR_TYPES).map(([value, label]) => (
-                <span
-                  key={value}
-                  onClick={() => setEditTutorType(value)}
-                  className={`cursor-pointer rounded-full border-[1.4px] px-4.5 py-2.5 text-sm font-medium transition-colors ${
-                    editTutorType === value
-                      ? 'border-blue-deep bg-blue-deep text-cream'
-                      : 'border-line bg-white text-ink-soft hover:border-blue-deep hover:text-blue-deep'
-                  }`}
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {saveError && <p className="mb-4 text-sm text-terracotta">{saveError}</p>}
-
-          <div className="flex justify-end gap-2.5">
-            <Button type="button" variant="ghost" onClick={() => setEditing(false)} disabled={saving}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant="primary" disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar'}
-            </Button>
-          </div>
-        </form>
+          <ProfileForm
+            initialName={profile.displayName}
+            initialPhotoURL={profile.photoURL}
+            initialTutorType={profile.tutorType}
+            submitLabel="Salvar"
+            onSubmit={handleSaveProfile}
+            onCancel={() => setEditing(false)}
+          />
+        </div>
       )}
 
       <section className="py-10">

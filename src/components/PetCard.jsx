@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import { useFavorites } from '../context/useFavorites'
 
@@ -33,8 +33,9 @@ export function FeaturePetCard({ pet, className = '' }) {
 }
 
 export function GridPetCard({ pet, statusLabel }) {
-  const { user, loginWithGoogle } = useAuth()
+  const { user } = useAuth()
   const { favoriteIds, toggleFavorite } = useFavorites()
+  const navigate = useNavigate()
   const isOwner = user?.uid === pet.donorId
   const isFavorite = favoriteIds.includes(pet.id)
 
@@ -42,7 +43,7 @@ export function GridPetCard({ pet, statusLabel }) {
     e.preventDefault()
     e.stopPropagation()
     if (!user) {
-      loginWithGoogle()
+      navigate(`/entrar?redirectTo=${encodeURIComponent(`/pet/${pet.id}`)}`)
       return
     }
     toggleFavorite(pet.id)

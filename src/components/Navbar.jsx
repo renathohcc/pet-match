@@ -11,7 +11,7 @@ const navLinks = [
 ]
 
 function Navbar() {
-  const { user, loginWithGoogle, logout } = useAuth()
+  const { user, logout } = useAuth()
   const { profile } = useProfile()
 
   return (
@@ -57,7 +57,7 @@ function Navbar() {
             </Button>
           </div>
         ) : (
-          <Button variant="ghost" onClick={() => loginWithGoogle()}>
+          <Button as={Link} to="/entrar" variant="ghost">
             Entrar
           </Button>
         )}

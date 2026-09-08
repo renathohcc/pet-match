@@ -12,6 +12,7 @@ import PublicProfile from './pages/PublicProfile'
 import Admin from './pages/Admin'
 import DuvidasFrequentes from './pages/DuvidasFrequentes'
 import Denunciar from './pages/Denunciar'
+import Entrar from './pages/Entrar'
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
         <Route path="/usuario/:uid" element={<PublicProfile />} />
         <Route path="/duvidas-frequentes" element={<DuvidasFrequentes />} />
         <Route path="/denunciar" element={<Denunciar />} />
+        <Route path="/entrar" element={<Entrar />} />
         <Route
           path="/admin"
           element={

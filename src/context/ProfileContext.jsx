@@ -22,6 +22,9 @@ export function ProfileProvider({ children }) {
         displayName: data.displayName ?? user.displayName ?? '',
         photoURL: data.photoURL ?? user.photoURL ?? '',
         tutorType: data.tutorType ?? 'independente',
+        // Usuário sem esse campo é de antes do onboarding existir — não faz
+        // sentido forçar quem já usa o site a passar por ele retroativamente.
+        onboarded: data.onboarded ?? true,
       })
 
       // Primeiro login: ainda não existe doc em users/{uid}, então nome/foto
@@ -35,6 +38,7 @@ export function ProfileProvider({ children }) {
             displayName: user.displayName ?? '',
             photoURL: user.photoURL ?? '',
             tutorType: 'independente',
+            onboarded: false,
           },
           { merge: true }
         ).catch(() => {})
