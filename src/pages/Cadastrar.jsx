@@ -73,8 +73,20 @@ function Cadastrar() {
   }
 
   function handlePhotosChange(e) {
-    const files = Array.from(e.target.files ?? []).slice(0, MAX_PHOTOS)
-    setPhotos(files)
+    const picked = Array.from(e.target.files ?? [])
+    e.target.value = '' // permite re-selecionar o mesmo arquivo depois de remover
+    setPhotos((prev) => {
+      const merged = [...prev]
+      for (const file of picked) {
+        const isDup = merged.some((f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)
+        if (!isDup && merged.length < MAX_PHOTOS) merged.push(file)
+      }
+      return merged
+    })
+  }
+
+  function removePhoto(index) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index))
   }
 
   function goNext() {
@@ -303,19 +315,35 @@ function Cadastrar() {
             <label className="block cursor-pointer rounded-[14px] border-[1.8px] border-dashed border-line bg-cream-2 p-9 text-center text-[14.5px] text-ink-soft">
               <input type="file" accept="image/*" multiple onChange={handlePhotosChange} className="hidden" />
               <strong className="mb-1 block text-[15px] text-blue-deep">
-                {photos.length > 0 ? `${photos.length} foto(s) selecionada(s)` : 'Clique para enviar fotos'}
+                {photos.length > 0 ? `${photos.length} de ${MAX_PHOTOS} foto(s)` : 'Clique para enviar fotos'}
               </strong>
-              Fotos nítidas e recentes aumentam muito a chance de adoção. Até {MAX_PHOTOS} fotos.
+              {photos.length >= MAX_PHOTOS
+                ? 'Limite de fotos atingido — remova alguma para trocar.'
+                : 'Fotos nítidas e recentes aumentam muito a chance de adoção. Você pode adicionar mais depois.'}
             </label>
             {photos.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2.5">
-                {photos.map((file) => (
-                  <img
-                    key={file.name + file.lastModified}
-                    src={URL.createObjectURL(file)}
-                    alt=""
-                    className="h-20 w-20 rounded-lg object-cover"
-                  />
+                {photos.map((file, i) => (
+                  <div key={file.name + file.size + file.lastModified} className="relative">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt=""
+                      className="h-20 w-20 rounded-lg object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      aria-label={`Remover foto ${i + 1}`}
+                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border border-line bg-white text-[11px] font-bold text-ink shadow-sm hover:bg-cream-2"
+                    >
+                      ✕
+                    </button>
+                    {i === 0 && (
+                      <span className="absolute bottom-0 left-0 right-0 rounded-b-lg bg-blue-deep/80 py-0.5 text-center text-[10px] font-semibold text-cream">
+                        Capa
+                      </span>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
