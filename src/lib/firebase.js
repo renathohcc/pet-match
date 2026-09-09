@@ -21,14 +21,20 @@ export const app = initializeApp(firebaseConfig)
 // Em dev, defina VITE_APPCHECK_DEBUG_TOKEN com o token gerado no console.
 const appCheckSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY
 if (appCheckSiteKey) {
-  const debugToken = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN
-  if (debugToken && typeof window !== 'undefined') {
-    window.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken
+  try {
+    const debugToken = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN
+    if (debugToken && typeof window !== 'undefined') {
+      window.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken
+    }
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    })
+  } catch (err) {
+    // Um problema no App Check (chave errada, reCAPTCHA fora do ar) nunca
+    // pode impedir o app de subir — pior caso, os requests vão sem token.
+    console.error('App Check não inicializou:', err)
   }
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(appCheckSiteKey),
-    isTokenAutoRefreshEnabled: true,
-  })
 }
 
 export const auth = getAuth(app)
