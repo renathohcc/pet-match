@@ -4,7 +4,7 @@ import Button from './Button'
 import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
 import { useNotifications } from '../context/useNotifications'
-import { deleteInterestAcceptedNotification, deleteInterestRequestNotification } from '../lib/notifications'
+import { deleteAdoptionConfirmedNotification, deleteInterestAcceptedNotification } from '../lib/notifications'
 import { isAdmin } from '../lib/admin'
 
 const navLinks = [
@@ -15,16 +15,28 @@ const navLinks = [
 function notificationText(n) {
   if (n.type === 'interest_request') return `🐾 ${n.fromUserName} tem interesse em adotar ${n.petName}`
   if (n.type === 'interest_accepted') return `✅ Seu interesse em ${n.petName} foi aceito — você já pode conversar!`
+  if (n.type === 'adoption_confirm_request') return `🎉 Você foi escolhido(a) como adotante de ${n.petName} — confirme!`
+  if (n.type === 'adoption_confirmed') return `🏡 ${n.fromUserName} confirmou a adoção de ${n.petName}!`
   return n.direction === 'donor_to_adopter'
     ? `⭐ Avalie sua experiência com quem adotou ${n.petName}`
     : `⭐ Avalie sua experiência com quem doou ${n.petName}`
 }
 
-// Lembrete de avaliação só some quando a avaliação é feita de verdade — os
-// dois tipos de interesse são só avisos, dispensáveis ao clicar.
+function notificationLink(n) {
+  if (n.type === 'review_reminder') return `/pet/${n.petId}?avaliar=${n.direction}`
+  if (n.type === 'interest_request' || n.type === 'interest_accepted' || n.type === 'adoption_confirm_request' || n.type === 'adoption_confirmed') {
+    return '/pedidos'
+  }
+  return `/pet/${n.petId}`
+}
+
+// Só notificações puramente informativas somem ao clicar — as que exigem
+// uma ação de verdade (pedido de interesse, lembrete de avaliação, pedido
+// de confirmação de adoção) só somem quando a ação é feita em /pedidos ou
+// na página do pet, nunca só por ter sido vista.
 function dismissOnClick(n) {
-  if (n.type === 'interest_request') return () => deleteInterestRequestNotification(n.petId, n.fromUserId)
   if (n.type === 'interest_accepted') return () => deleteInterestAcceptedNotification(n.petId, n.userId)
+  if (n.type === 'adoption_confirmed') return () => deleteAdoptionConfirmedNotification(n.petId, n.userId)
   return null
 }
 
@@ -64,6 +76,9 @@ function Navbar() {
                 Admin
               </Link>
             )}
+            <Link to="/pedidos" className="hidden text-[13px] font-semibold text-blue-mid hover:underline sm:inline">
+              🐾 Pedidos
+            </Link>
             <Link to="/perfil" title="Meu perfil">
               {profile?.photoURL ? (
                 <img src={profile.photoURL} alt={profile.displayName} className="h-8 w-8 rounded-full object-cover" />
@@ -117,7 +132,7 @@ function Navbar() {
                   notifications.map((n) => (
                     <Link
                       key={n.id}
-                      to={n.type === 'review_reminder' ? `/pet/${n.petId}?avaliar=${n.direction}` : `/pet/${n.petId}`}
+                      to={notificationLink(n)}
                       onClick={() => {
                         setNotifOpen(false)
                         dismissOnClick(n)?.().catch(() => {})
@@ -178,6 +193,13 @@ function Navbar() {
                   Admin
                 </Link>
               )}
+              <Link
+                to="/pedidos"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-2 py-2.5 text-[15px] font-medium text-ink-soft hover:text-blue-deep"
+              >
+                🐾 Pedidos
+              </Link>
               <button
                 type="button"
                 onClick={() => {

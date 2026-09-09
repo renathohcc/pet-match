@@ -52,9 +52,19 @@ service cloud.firestore {
         && hasValidPetShape(request.resource.data)
         && request.resource.data.donorId == request.auth.uid;
 
-      allow update: if isOwner(resource.data.donorId)
-        && hasValidPetShape(request.resource.data)
-        && request.resource.data.donorId == resource.data.donorId;
+      allow update: if (isOwner(resource.data.donorId)
+          && hasValidPetShape(request.resource.data)
+          && request.resource.data.donorId == resource.data.donorId)
+        // Autoatendimento de quem confirmou a adoção (ver `interests` abaixo):
+        // sem backend, é o navegador da própria pessoa que precisa fazer esse
+        // último write — restrito a UM tipo de mudança só (disponivel -> adotado
+        // + adopterId == o próprio uid), e só depois de confirmar de verdade.
+        || (isSignedIn()
+          && resource.data.status != 'adotado'
+          && request.resource.data.status == 'adotado'
+          && request.resource.data.adopterId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adopterId'])
+          && get(/databases/$(database)/documents/interests/$(petId + '_' + request.auth.uid)).data.status == 'confirmado');
 
       // Pet adotado não pode mais ser excluído pelo próprio doador — evita
       // apagar o histórico junto de avaliações que já existem sobre a
@@ -73,9 +83,12 @@ service cloud.firestore {
     }
 
     // Manifestação de interesse num pet — precisa do aceite do doador antes
-    // do contato (whatsapp) ser liberado (ver petContacts abaixo). Doador
-    // pode aceitar vários interessados ao mesmo tempo; a escolha de quem
-    // efetivamente adotou continua acontecendo depois, ao marcar "Adotado".
+    // do contato (whatsapp) ser liberado (ver petContacts abaixo), e a
+    // adoção só vira definitiva quando a PRÓPRIA pessoa escolhida confirma
+    // (ver `confirmacao_pendente`/`confirmado` abaixo e a regra de `pets`).
+    // `donorId` é denormalizado do pet na criação — evita `get()` extra na
+    // leitura/atualização e viabiliza listar "tudo que eu recebi" com uma
+    // query só, em vez de pet por pet.
     match /interests/{interestId} {
       // Só o próprio interessado (seu pedido) ou o doador do pet (todos os
       // pedidos do anúncio dele) podem ler — antes disso vazava pra
@@ -87,18 +100,29 @@ service cloud.firestore {
       // dá erro e nega a leitura (é o que travava o botão em "Carregando...").
       allow read: if isSignedIn()
         && (interestId.matches('^.*_' + request.auth.uid + '$')
-          || (resource != null && petDonorId(resource.data.petId) == request.auth.uid));
+          || (resource != null && resource.data.donorId == request.auth.uid));
 
       allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'pendente';
+        && request.resource.data.status == 'pendente'
+        && request.resource.data.donorId == petDonorId(request.resource.data.petId);
 
-      // Só o doador aceita/recusa, e só pode mexer no campo status (não dá
-      // pra reescrever petId/userId/message por baixo do pedido original).
+      // Só mexe no campo status — nunca petId/userId/donorId/message por
+      // baixo do pedido original. Duas linhas de transição possíveis:
+      // o doador conduz o "funil" normal (inclusive escolher alguém como
+      // adotante, que só fica pendente de confirmação); só a PRÓPRIA pessoa
+      // escolhida — e só a partir de "confirmacao_pendente" — pode confirmar
+      // de vez (ninguém mais consegue setar "confirmado").
       allow update: if isSignedIn()
-        && petDonorId(resource.data.petId) == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status in ['pendente', 'aceito', 'recusado'];
+        && (
+          (resource.data.donorId == request.auth.uid
+            && request.resource.data.status in ['pendente', 'aceito', 'recusado', 'confirmacao_pendente'])
+          ||
+          (resource.data.userId == request.auth.uid
+            && resource.data.status == 'confirmacao_pendente'
+            && request.resource.data.status in ['aceito', 'confirmado'])
+        );
 
       allow delete: if false;
     }
@@ -110,7 +134,7 @@ service cloud.firestore {
       allow read: if isSignedIn()
         && resource != null
         && (resource.data.donorId == request.auth.uid
-          || get(/databases/$(database)/documents/interests/$(petId + '_' + request.auth.uid)).data.status == 'aceito');
+          || get(/databases/$(database)/documents/interests/$(petId + '_' + request.auth.uid)).data.status in ['aceito', 'confirmacao_pendente', 'confirmado']);
 
       allow create, update: if isSignedIn()
         && request.resource.data.donorId == request.auth.uid
@@ -176,23 +200,27 @@ service cloud.firestore {
       allow update: if false;
     }
 
-    // Notificações no sino da Navbar — 3 tipos hoje, todas endereçadas a um
-    // `userId` só (o destinatário lê/apaga a própria, nunca a de outra
-    // pessoa). `review_reminder` não some até a review ser criada de
-    // verdade (ver deleteReviewReminder); as de interesse são dispensáveis
-    // ao clicar (não travam esperando outra ação).
+    // Notificações no sino da Navbar — todas endereçadas a um `userId` só (o
+    // destinatário lê/apaga a própria, nunca a de outra pessoa). As que
+    // exigem uma ação de verdade (`review_reminder`, `interest_request`,
+    // `adoption_confirm_request`) não somem ao simplesmente abrir/clicar —
+    // só quando a ação é feita; as puramente informativas
+    // (`interest_accepted`, `adoption_confirmed`) são dispensáveis.
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
 
       allow create: if isSignedIn() && (
-        // Lembrete de avaliação pendente: só o doador, ao marcar o pet como
-        // adotado com um adotante escolhido, cria o par (pra si e pro
-        // adotante).
+        // Lembrete de avaliação pendente: criado no momento em que o pet
+        // vira "adotado" de vez — pelo doador (fluxo manual sem adotante
+        // rastreado) OU pelo próprio adotante (fluxo normal, é o navegador
+        // dele que faz esse último write, ver regra de `pets`).
         (request.resource.data.type == 'review_reminder'
-          && petDonorId(request.resource.data.petId) == request.auth.uid
           && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.status == 'adotado'
+          && (petDonorId(request.resource.data.petId) == request.auth.uid
+            || get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.adopterId == request.auth.uid)
           && (
-            (request.resource.data.direction == 'donor_to_adopter' && request.resource.data.userId == request.auth.uid)
+            (request.resource.data.direction == 'donor_to_adopter'
+              && request.resource.data.userId == petDonorId(request.resource.data.petId))
             ||
             (request.resource.data.direction == 'adopter_to_donor'
               && request.resource.data.userId == get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.adopterId)
@@ -206,6 +234,17 @@ service cloud.firestore {
         // Interesse aceito: só o doador do pet avisa quem foi aceito.
         (request.resource.data.type == 'interest_accepted'
           && petDonorId(request.resource.data.petId) == request.auth.uid)
+        ||
+        // Pedido de confirmação de adoção: só o doador, ao escolher alguém
+        // (interesse aceito -> confirmacao_pendente) avisa a pessoa escolhida.
+        (request.resource.data.type == 'adoption_confirm_request'
+          && petDonorId(request.resource.data.petId) == request.auth.uid
+          && request.resource.data.userId != request.auth.uid)
+        ||
+        // Adoção confirmada: só quem confirmou (o próprio adotante) avisa o doador.
+        (request.resource.data.type == 'adoption_confirmed'
+          && request.resource.data.fromUserId == request.auth.uid
+          && request.resource.data.userId == petDonorId(request.resource.data.petId))
       );
 
       allow update: if false;

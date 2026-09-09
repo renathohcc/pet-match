@@ -13,6 +13,7 @@ import Admin from './pages/Admin'
 import DuvidasFrequentes from './pages/DuvidasFrequentes'
 import Denunciar from './pages/Denunciar'
 import Entrar from './pages/Entrar'
+import Pedidos from './pages/Pedidos'
 
 function App() {
   return (
@@ -42,6 +43,14 @@ function App() {
         <Route path="/duvidas-frequentes" element={<DuvidasFrequentes />} />
         <Route path="/denunciar" element={<Denunciar />} />
         <Route path="/entrar" element={<Entrar />} />
+        <Route
+          path="/pedidos"
+          element={
+            <RequireAuth title="Entre para ver seus pedidos" message="Faça login com Google para ver os pedidos de interesse que você recebeu ou fez.">
+              <Pedidos />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/admin"
           element={

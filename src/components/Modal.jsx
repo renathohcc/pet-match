@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 /**
  * Base de modal reutilizável — resolve fechar com Esc, fechar com clique no
  * backdrop e travar o scroll do body enquanto aberto. `ConfirmDialog`,
- * `ReviewDialog`, `DisputeDialog`, `AdopterPickerDialog` e o modal de
+ * `ReviewDialog`, `DisputeDialog`, `InterestRequestDialog` e o modal de
  * compartilhar do `PetDetail.jsx` usam essa base por dentro.
  *
  * `children` é o conteúdo do cartão (título/corpo/botões) — o cartão em si

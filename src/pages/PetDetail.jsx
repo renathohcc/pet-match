@@ -8,31 +8,17 @@ import Chip from '../components/Chip'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Modal from '../components/Modal'
 import ShareCard from '../components/ShareCard'
-import AdopterPickerDialog from '../components/AdopterPickerDialog'
 import InterestRequestDialog from '../components/InterestRequestDialog'
-import InterestsPanel from '../components/InterestsPanel'
 import ReviewDialog from '../components/ReviewDialog'
 import RatingBadge from '../components/RatingBadge'
 import { deletePet, getPetById, PET_STATUSES, updatePetStatus } from '../lib/pets'
 import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
 import { useFavorites } from '../context/useFavorites'
-import {
-  getMyInterest,
-  listAcceptedInterestedUsers,
-  listInterests,
-  requestInterest,
-  updateInterestStatus,
-} from '../lib/interests'
+import { getMyInterest, listInterests, requestInterest } from '../lib/interests'
 import { getPetContact } from '../lib/petContacts'
 import { getReview, getUserRatingSummary, submitReview } from '../lib/reviews'
-import {
-  createInterestAcceptedNotification,
-  createReviewReminder,
-  deleteInterestRequestNotification,
-  createInterestRequestNotification,
-  deleteReviewReminder,
-} from '../lib/notifications'
+import { createInterestRequestNotification, deleteReviewReminder } from '../lib/notifications'
 import { getPublicProfile } from '../lib/users'
 import { isAdmin } from '../lib/admin'
 
@@ -52,18 +38,16 @@ function PetDetail() {
   const [shareOpen, setShareOpen] = useState(false)
   const [shareContact, setShareContact] = useState(null) // whatsapp do próprio doador, carregado só ao abrir compartilhar
 
-  const [adopterPicker, setAdopterPicker] = useState(null) // { interestedUsers: [] } | null
-
   // Manifestação de interesse (visão de quem não é dono do pet)
   const [myInterest, setMyInterest] = useState(null) // { status, message } | null
   const [myInterestLoaded, setMyInterestLoaded] = useState(false)
   const [interestRequestOpen, setInterestRequestOpen] = useState(false)
   const [contactWhatsapp, setContactWhatsapp] = useState(null) // liberado só depois do interesse aceito
 
-  // Painel "Pedidos de interesse" (visão do dono do pet)
-  const [interests, setInterests] = useState([])
+  // Contagem de "Pedidos de interesse" (visão do dono do pet) — só um teaser
+  // aqui; a gestão de verdade (aceitar/recusar/marcar adotante) vive em /pedidos.
+  const [interestsCount, setInterestsCount] = useState(0)
   const [interestsLoading, setInterestsLoading] = useState(true)
-  const [updatingInterestUid, setUpdatingInterestUid] = useState(null)
   const [donorRating, setDonorRating] = useState({ average: 0, count: 0 })
   const [donorRatingLoading, setDonorRatingLoading] = useState(true)
   const [adopterName, setAdopterName] = useState('')
@@ -171,7 +155,8 @@ function PetDetail() {
     }
   }, [pet, user])
 
-  // Painel "Pedidos de interesse" (visão do dono do pet).
+  // Contagem de pedidos de interesse (visão do dono do pet) — só pro teaser
+  // que linka pra /pedidos, onde a gestão de verdade acontece.
   useEffect(() => {
     if (!pet || !user || user.uid !== pet.donorId) return undefined
     let cancelled = false
@@ -180,10 +165,10 @@ function PetDetail() {
 
     listInterests(pet.id)
       .then((list) => {
-        if (!cancelled) setInterests(list)
+        if (!cancelled) setInterestsCount(list.length)
       })
       .catch(() => {
-        if (!cancelled) setInterests([])
+        if (!cancelled) setInterestsCount(0)
       })
       .finally(() => {
         if (!cancelled) setInterestsLoading(false)
@@ -292,7 +277,7 @@ function PetDetail() {
   }
 
   async function handleInterestRequestSubmit(message) {
-    await requestInterest({ petId: pet.id, userId: user.uid, message })
+    await requestInterest({ petId: pet.id, petName: pet.name, donorId: pet.donorId, userId: user.uid, message })
     createInterestRequestNotification({
       petId: pet.id,
       petName: pet.name,
@@ -304,59 +289,13 @@ function PetDetail() {
     setInterestRequestOpen(false)
   }
 
-  async function handleAcceptInterest(userId) {
-    setUpdatingInterestUid(userId)
-    try {
-      await updateInterestStatus(pet.id, userId, 'aceito')
-      setInterests((prev) => prev.map((i) => (i.userId === userId ? { ...i, status: 'aceito' } : i)))
-      await Promise.all([
-        deleteInterestRequestNotification(pet.id, userId),
-        createInterestAcceptedNotification({ petId: pet.id, petName: pet.name, userId }),
-      ]).catch(() => {})
-    } finally {
-      setUpdatingInterestUid(null)
-    }
-  }
-
-  async function handleDeclineInterest(userId) {
-    setUpdatingInterestUid(userId)
-    try {
-      await updateInterestStatus(pet.id, userId, 'recusado')
-      setInterests((prev) => prev.map((i) => (i.userId === userId ? { ...i, status: 'recusado' } : i)))
-      deleteInterestRequestNotification(pet.id, userId).catch(() => {})
-    } finally {
-      setUpdatingInterestUid(null)
-    }
-  }
-
-  async function handleStatusChipClick(value) {
-    if (value === 'adotado') {
-      const interested = await listAcceptedInterestedUsers(pet.id)
-      if (interested.length > 0) {
-        setAdopterPicker({ interestedUsers: interested })
-        return
-      }
-    }
+  // Marcar "Adotado" na mão continua existindo pro caso de adoção fora da
+  // plataforma (sem interesse rastreado) — quando já há pedidos aceitos ou
+  // aguardando confirmação, o aviso no diálogo sugere usar "Marcar como
+  // adotante" em /pedidos em vez disso, que é o caminho com confirmação da
+  // outra pessoa (ver Fase 10 do plano).
+  function handleStatusChipClick(value) {
     setConfirmAction({ type: 'status', value })
-  }
-
-  async function handleAdopterSelected(adopterId) {
-    setAdopterPicker(null)
-    setUpdatingStatus(true)
-    try {
-      await updatePetStatus(pet.id, 'adotado', adopterId)
-      setPet((prev) => ({ ...prev, status: 'adotado', ...(adopterId ? { adopterId } : {}) }))
-      // Cria os dois lembretes de avaliação pendente (doador e adotante) —
-      // só faz sentido quando há um adotante de verdade escolhido.
-      if (adopterId) {
-        Promise.all([
-          createReviewReminder({ petId: pet.id, petName: pet.name, direction: 'donor_to_adopter', userId: pet.donorId }),
-          createReviewReminder({ petId: pet.id, petName: pet.name, direction: 'adopter_to_donor', userId: adopterId }),
-        ]).catch(() => {})
-      }
-    } finally {
-      setUpdatingStatus(false)
-    }
   }
 
   async function handleStatusChange(status) {
@@ -515,14 +454,13 @@ function PetDetail() {
             </div>
           )}
 
-          {isOwner && pet.status !== 'adotado' && (
-            <InterestsPanel
-              interests={interests}
-              loading={interestsLoading}
-              onAccept={handleAcceptInterest}
-              onDecline={handleDeclineInterest}
-              updatingUid={updatingInterestUid}
-            />
+          {isOwner && pet.status !== 'adotado' && !interestsLoading && interestsCount > 0 && (
+            <Link
+              to="/pedidos"
+              className="mb-4.5 block rounded-2xl border border-line bg-white p-4.5 text-[13.5px] font-semibold text-blue-deep hover:border-blue-deep"
+            >
+              🐾 {interestsCount} pedido{interestsCount > 1 ? 's' : ''} de interesse — Ver em Meus Pedidos →
+            </Link>
           )}
 
           {isOwner && (
@@ -598,6 +536,17 @@ function PetDetail() {
                 <Button variant="whatsapp" className="mb-2.5 w-full" onClick={handleContactButtonClick}>
                   💬 Conversar no WhatsApp
                 </Button>
+              ) : myInterest.status === 'confirmacao_pendente' ? (
+                <Link
+                  to="/pedidos"
+                  className="mb-2.5 block rounded-lg bg-cream-2 px-3.5 py-2.5 text-center text-[13.5px] font-semibold text-blue-deep hover:underline"
+                >
+                  🎉 Você foi escolhido(a)! Confirme em Meus Pedidos →
+                </Link>
+              ) : myInterest.status === 'confirmado' ? (
+                <p className="mb-2.5 rounded-lg bg-cream-2 px-3.5 py-2.5 text-center text-[13.5px] text-ink-soft">
+                  🏡 Você confirmou a adoção desse pet.
+                </p>
               ) : (
                 <p className="mb-2.5 rounded-lg bg-cream-2 px-3.5 py-2.5 text-center text-[13.5px] text-ink-soft">
                   Esse doador já seguiu com outro processo pra esse pet.
@@ -632,7 +581,11 @@ function PetDetail() {
       <ConfirmDialog
         open={confirmAction?.type === 'status'}
         title="Mudar status do anúncio"
-        message={`Marcar ${pet.name} como "${confirmAction?.value ? PET_STATUSES[confirmAction.value] : ''}"?`}
+        message={
+          confirmAction?.value === 'adotado' && interestsCount > 0
+            ? `Marcar ${pet.name} como "Adotado" manualmente, sem vincular a um pedido de interesse específico? Se foi alguém que pediu interesse por aqui, prefira "Marcar como adotante" em Meus Pedidos — assim a pessoa confirma antes do anúncio fechar.`
+            : `Marcar ${pet.name} como "${confirmAction?.value ? PET_STATUSES[confirmAction.value] : ''}"?`
+        }
         confirmLabel="Confirmar"
         onConfirm={() => handleStatusChange(confirmAction.value)}
         onCancel={() => setConfirmAction(null)}
@@ -654,14 +607,6 @@ function PetDetail() {
         article={article}
         onSubmit={handleInterestRequestSubmit}
         onCancel={() => setInterestRequestOpen(false)}
-      />
-
-      <AdopterPickerDialog
-        open={Boolean(adopterPicker)}
-        petName={pet.name}
-        interestedUsers={adopterPicker?.interestedUsers ?? []}
-        onSelect={handleAdopterSelected}
-        onCancel={() => setAdopterPicker(null)}
       />
 
       <ReviewDialog

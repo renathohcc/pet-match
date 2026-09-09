@@ -8,20 +8,27 @@ const STATUS_LABEL = {
   pendente: 'Pendente',
   aceito: 'Aceito',
   recusado: 'Recusado',
+  confirmacao_pendente: 'Aguardando confirmação',
+  confirmado: 'Confirmado',
 }
 
 const STATUS_CLASS = {
   pendente: 'bg-[#FCF0E4] text-terracotta',
   aceito: 'bg-[#E7F1EA] text-green',
   recusado: 'bg-[#EAEAEA] text-ink-soft',
+  confirmacao_pendente: 'bg-[#E7F1EA] text-green',
+  confirmado: 'bg-[#E7F1EA] text-green',
 }
 
 /**
- * Painel "Pedidos de interesse" — visível só pro doador, na página do pet.
- * Lista quem manifestou interesse (qualquer status) com nota/perfil, pra ele
- * decidir quem aceitar antes de liberar o contato (ver petContacts.js).
+ * Linhas de pedido de interesse — visão do doador ("Pedidos que recebi"),
+ * usado tanto no teaser de PetDetail.jsx (via contagem) quanto na página
+ * /pedidos (lista completa, com nome do pet). Cada status expõe só as ações
+ * que fazem sentido dali — nunca "Aceitar"/"Recusar" juntos pra algo já
+ * decidido — e toda ação passa por confirmação (o `on*` aqui só ABRE o
+ * confirm dialog do chamador; a mutação de verdade roda no onConfirm dele).
  */
-function InterestsPanel({ interests, loading, onAccept, onDecline, updatingUid }) {
+function InterestsPanel({ interests, loading, onAccept, onDecline, onMarkAdopter, onCancelConfirmRequest, onReconsider, updatingUid, showPetName = false }) {
   const [ratings, setRatings] = useState({})
 
   useEffect(() => {
@@ -41,13 +48,16 @@ function InterestsPanel({ interests, loading, onAccept, onDecline, updatingUid }
   if (interests.length === 0) return null
 
   return (
-    <div className="mb-4.5 rounded-2xl border border-line bg-white p-5.5">
-      <h4 className="mb-3 text-[14.5px] font-bold text-blue-deep">
-        🐾 Pedidos de interesse ({interests.length})
-      </h4>
-      <div className="flex flex-col gap-2.5">
-        {interests.map((i) => (
-          <div key={i.userId} className="rounded-xl border border-line p-3.5">
+    <div className="flex flex-col gap-2.5">
+      {interests.map((i) => {
+        const updating = updatingUid === i.userId
+        return (
+          <div key={`${i.petId}_${i.userId}`} className="rounded-xl border border-line p-3.5">
+            {showPetName && (
+              <Link to={`/pet/${i.petId}`} className="mb-2 block text-[12.5px] font-semibold text-blue-mid hover:underline">
+                🐾 {i.petName}
+              </Link>
+            )}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 {i.photoURL ? (
@@ -65,33 +75,53 @@ function InterestsPanel({ interests, loading, onAccept, onDecline, updatingUid }
                 </div>
               </div>
               <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold ${STATUS_CLASS[i.status]}`}>
-                {STATUS_LABEL[i.status]}
+                {STATUS_LABEL[i.status] ?? i.status}
               </span>
             </div>
 
             {i.message && <p className="mt-2.5 text-[13.5px] italic text-ink-soft">"{i.message}"</p>}
 
-            <div className="mt-3 flex gap-2">
-              <Button
-                variant="primary"
-                className="flex-1"
-                disabled={i.status === 'aceito' || updatingUid === i.userId}
-                onClick={() => onAccept(i.userId)}
-              >
-                Aceitar
-              </Button>
-              <Button
-                variant="ghost"
-                className="flex-1"
-                disabled={i.status === 'recusado' || updatingUid === i.userId}
-                onClick={() => onDecline(i.userId)}
-              >
-                Recusar
-              </Button>
-            </div>
+            {i.status === 'pendente' && (
+              <div className="mt-3 flex gap-2">
+                <Button variant="primary" className="flex-1" disabled={updating} onClick={() => onAccept(i)}>
+                  Aceitar
+                </Button>
+                <Button variant="ghost" className="flex-1" disabled={updating} onClick={() => onDecline(i)}>
+                  Recusar
+                </Button>
+              </div>
+            )}
+
+            {i.status === 'aceito' && (
+              <div className="mt-3 flex gap-2">
+                <Button variant="primary" className="flex-1" disabled={updating} onClick={() => onMarkAdopter(i)}>
+                  Marcar como adotante
+                </Button>
+                <Button variant="ghost" className="flex-1" disabled={updating} onClick={() => onDecline(i)}>
+                  Recusar
+                </Button>
+              </div>
+            )}
+
+            {i.status === 'recusado' && (
+              <div className="mt-3">
+                <Button variant="ghost" className="w-full" disabled={updating} onClick={() => onReconsider(i)}>
+                  Reconsiderar
+                </Button>
+              </div>
+            )}
+
+            {i.status === 'confirmacao_pendente' && (
+              <div className="mt-3">
+                <p className="mb-2 text-[12.5px] text-ink-soft">⏳ Aguardando confirmação da pessoa escolhida.</p>
+                <Button variant="ghost" className="w-full" disabled={updating} onClick={() => onCancelConfirmRequest(i)}>
+                  Cancelar pedido
+                </Button>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        )
+      })}
     </div>
   )
 }

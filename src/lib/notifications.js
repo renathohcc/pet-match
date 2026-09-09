@@ -57,3 +57,37 @@ export async function createInterestAcceptedNotification({ petId, petName, userI
 export async function deleteInterestAcceptedNotification(petId, userId) {
   await deleteDoc(doc(db, 'notifications', `interest_accepted_${petId}_${userId}`))
 }
+
+/** Avisa a pessoa escolhida que o doador quer que ela confirme a adoção. */
+export async function createAdoptionConfirmRequestNotification({ petId, petName, userId }) {
+  await setDoc(doc(db, 'notifications', `adoption_confirm_${petId}_${userId}`), {
+    type: 'adoption_confirm_request',
+    userId,
+    petId,
+    petName,
+    createdAt: serverTimestamp(),
+  })
+}
+
+/** Some quando a confirmação é resolvida (confirmada ou cancelada) — nunca ao só clicar. */
+export async function deleteAdoptionConfirmRequestNotification(petId, userId) {
+  await deleteDoc(doc(db, 'notifications', `adoption_confirm_${petId}_${userId}`))
+}
+
+/** Avisa o doador que a pessoa escolhida confirmou a adoção de verdade. */
+export async function createAdoptionConfirmedNotification({ petId, petName, userId, fromUserId, fromUserName }) {
+  await setDoc(doc(db, 'notifications', `adoption_confirmed_${petId}_${userId}`), {
+    type: 'adoption_confirmed',
+    userId,
+    petId,
+    petName,
+    fromUserId,
+    fromUserName,
+    createdAt: serverTimestamp(),
+  })
+}
+
+/** Dispensa a notificação "adoção confirmada" (ex: ao clicar nela). */
+export async function deleteAdoptionConfirmedNotification(petId, userId) {
+  await deleteDoc(doc(db, 'notifications', `adoption_confirmed_${petId}_${userId}`))
+}
