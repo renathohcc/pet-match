@@ -4,7 +4,9 @@
 **Escopo:** segurança da plataforma, proteção dos dados dos usuários e sistemas anti-fraude.
 **Base de código analisada:** frontend React + Vite, `firestore.rules`, `.github/workflows/deploy.yml`, `scripts/`, integração Cloudinary.
 
-> Documento de diagnóstico + roadmap. **Progresso:** S1 ✅ · S2 ✅ · S3 ✅ código (2026-09-09) — falta ação de console (ver checklist abaixo) · S4 pendente.
+> Documento de diagnóstico + roadmap. **Progresso (2026-09-09):** S1 ✅ · S2 ✅ · S3 ✅ (rate limiting, App Check com reCAPTCHA Enterprise, pós-moderação — tudo testado em prod). Falta só o hardening do preset Cloudinary (console). S4 pendente.
+>
+> **Nota:** o workflow `firestore-rules.yml` ficou com 403 (`firebaserules`) da S1 até 2026-09-09 — as regras S1/S2 só entraram em prod quando publicadas manualmente pelo console nesse dia. Corrigido dando o papel *Firebase Rules Admin* à service account de CI; o CI publica sozinho desde então.
 
 ---
 
@@ -132,17 +134,15 @@ Perder a conta Google `vJwhGPjI6eYVyl7XAfMevNKfJHR2` (perda de acesso, suspensã
 - **M2** ✅ — `isValidBrPhone()` valida o WhatsApp no `Cadastrar.jsx`; regras de `petContacts` exigem string 8–25 e só as chaves `whatsapp`/`donorId`.
 - **A5** ✅ — `reports` não é mais apagado ao resolver: ganha `status` (`aberta`/`resolvida`/`descartada`) + `resolvedBy` + `resolvedAt`. Criação valida `reason` (lista fechada), `details` ≤ 1000 e `status == 'aberta'`. Painel admin passa a ter "Resolvida" e "Descartar".
 
-### Fase S3 — Anti-abuso e anti-fraude ✅ (código)
+### Fase S3 — Anti-abuso e anti-fraude ✅ (testado em prod)
 - **A2 (rate limiting)** ✅ — `rateLimits/{uid}` carimba a hora de cada ação; criar `pets`/`reports`/`interests` só passa com o carimbo no mesmo batch (`getAfter`) e as regras impõem intervalo mínimo (pet 45s, denúncia 20s, interesse 12s). `src/lib/rateLimit.js` + `createPet()`/`submitReport()`/`requestInterest()` em `writeBatch`.
-- **A2 (App Check)** ✅ código — `initializeAppCheck` com reCAPTCHA v3 em `src/lib/firebase.js`, ativo só quando `VITE_RECAPTCHA_SITE_KEY` existe. **Falta console**: registrar o app + criar a site key + secret no GitHub + ativar enforcement.
-- **Pós-moderação** ✅ — denúncia com `petId` tem id determinístico (`${petId}__${uid}`, 1 por pessoa) e incrementa `pets.reportCount`; a busca esconde `reportCount >= 3` (link direto ainda abre). Painel admin mostra o contador e tem "Restaurar anúncio".
-- **A1 / M1 (Cloudinary)** ⏳ — só ação de console; o código não muda.
+- **A2 (App Check)** ✅ — `initializeAppCheck` com **reCAPTCHA Enterprise** em `src/lib/firebase.js` (v3 clássico está sendo descontinuado), ativo só com `VITE_RECAPTCHA_SITE_KEY` e num try/catch pra nunca derrubar o app. App registrado, chave criada, secret no GitHub. Enforcement do Cloud Firestore: aplicar quando o painel mostrar ~100% "verificado".
+- **Pós-moderação** ✅ testado — denúncia com `petId` tem id determinístico (`${petId}__${uid}`, 1 por pessoa) e incrementa `pets.reportCount`; a busca esconde `reportCount >= 3` (link direto ainda abre). Painel admin mostra o contador e tem "Restaurar anúncio". Regra de `reports`: `get` do próprio doc liberado pelo sufixo `__<uid>` (pre-check de dedup).
+- **A1 / M1 (Cloudinary)** ⏳ — pendente, só ação de console; o código não muda.
 - **M3 (dedup de repost)** — não feito nesta fase (optou-se por pós-moderação em vez do bloqueio por `donorId`+`name`+`city`). Reavaliar se aparecer spam de repost.
 
-#### Checklist de console para fechar a S3
-1. **App Check**: Firebase console → App Check → registrar o app web → provedor **reCAPTCHA v3**. Gerar a site key (domínios: o do GitHub Pages + `localhost`), guardar como secret `VITE_RECAPTCHA_SITE_KEY` no GitHub. Dev local: "Gerenciar tokens de depuração" → `.env.local` como `VITE_APPCHECK_DEBUG_TOKEN`.
-2. **Enforcement**: após um deploy com a key, App Check → APIs → **Cloud Firestore → Aplicar** (só depois de ver os requests legítimos como "verificados" no painel).
-3. **Cloudinary** (Settings → Upload → preset `petmatch_pets`): manter **Unsigned**; **Allowed formats** `jpg,png,webp`; **Max file size** (~10 MB) e dimensão máxima; ligar **Strip metadata/EXIF** (resolve M1); fixar a **pasta** no preset; opcional: moderação + limite de origem.
+#### Pendência de console da S3
+**Cloudinary** (Settings → Upload → preset `petmatch_pets`): manter **Unsigned**; **Allowed formats** `jpg,png,webp`; **Max file size** (~10 MB) e dimensão máxima; ligar **Strip metadata/EXIF** (resolve M1); fixar a **pasta** no preset; opcional: moderação + limite de origem.
 
 ### Fase S4 — Conformidade e endurecimento de plataforma
 - **B4** — Página de Política de Privacidade + Termos de Uso (LGPD); consentimento explícito no onboarding; mecanismo de exclusão de conta/dados.
