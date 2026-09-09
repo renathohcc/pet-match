@@ -5,6 +5,7 @@ import Container from '../components/Container'
 import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Modal from '../components/Modal'
 import ShareCard from '../components/ShareCard'
 import AdopterPickerDialog from '../components/AdopterPickerDialog'
 import ReviewDialog from '../components/ReviewDialog'
@@ -35,22 +36,6 @@ function PetDetail() {
   const [adopterName, setAdopterName] = useState('')
   const [reviewTarget, setReviewTarget] = useState(null) // { uid, name, direction } | null
   const [myReviews, setMyReviews] = useState({ donor_to_adopter: null, adopter_to_donor: null })
-
-  useEffect(() => {
-    if (!shareOpen) return
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') setShareOpen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    // Trava o scroll da página de fundo enquanto o modal está aberto — evita
-    // o celular "confundir" o scroll da página com o scroll interno do modal.
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = previousOverflow
-    }
-  }, [shareOpen])
 
   useEffect(() => {
     let cancelled = false
@@ -473,29 +458,17 @@ function PetDetail() {
         onCancel={() => setReviewTarget(null)}
       />
 
-      {shareOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 sm:items-center"
-          onClick={() => setShareOpen(false)}
-        >
-          <div
-            className="relative flex max-h-[85vh] w-full max-w-[460px] flex-col rounded-2xl bg-cream shadow-[0_20px_40px_rgba(22,50,79,.2)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setShareOpen(false)}
-              className="absolute right-4 top-4 z-10 cursor-pointer rounded-full bg-white/90 px-2.5 py-1 text-xl leading-none text-ink-soft shadow-sm hover:text-blue-deep"
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-            <div className="overflow-y-auto overscroll-contain p-6">
-              <ShareCard pet={pet} />
-            </div>
-          </div>
+      <Modal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        showCloseButton
+        overlayClassName="items-start sm:items-center"
+        cardClassName="flex max-h-[85vh] w-full max-w-[460px] flex-col rounded-2xl bg-cream shadow-[0_20px_40px_rgba(22,50,79,.2)]"
+      >
+        <div className="overflow-y-auto overscroll-contain p-6">
+          <ShareCard pet={pet} />
         </div>
-      )}
+      </Modal>
     </Container>
   )
 }
