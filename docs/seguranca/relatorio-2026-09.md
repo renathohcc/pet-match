@@ -4,7 +4,7 @@
 **Escopo:** segurança da plataforma, proteção dos dados dos usuários e sistemas anti-fraude.
 **Base de código analisada:** frontend React + Vite, `firestore.rules`, `.github/workflows/deploy.yml`, `scripts/`, integração Cloudinary.
 
-> Documento de diagnóstico + roadmap. **Progresso (2026-09-09):** S1 ✅ · S2 ✅ · S3 ✅ (rate limiting, App Check com reCAPTCHA Enterprise, pós-moderação — tudo testado em prod). Falta só o hardening do preset Cloudinary (console). S4 pendente.
+> Documento de diagnóstico + roadmap. **Progresso (2026-09-09):** S1 ✅ · S2 ✅ · S3 ✅ (rate limiting, App Check com reCAPTCHA Enterprise + enforcement aplicado, pós-moderação, hardening do Cloudinary — tudo em prod). S4 pendente.
 >
 > **Nota:** o workflow `firestore-rules.yml` ficou com 403 (`firebaserules`) da S1 até 2026-09-09 — as regras S1/S2 só entraram em prod quando publicadas manualmente pelo console nesse dia. Corrigido dando o papel *Firebase Rules Admin* à service account de CI; o CI publica sozinho desde então.
 
@@ -138,11 +138,8 @@ Perder a conta Google `vJwhGPjI6eYVyl7XAfMevNKfJHR2` (perda de acesso, suspensã
 - **A2 (rate limiting)** ✅ — `rateLimits/{uid}` carimba a hora de cada ação; criar `pets`/`reports`/`interests` só passa com o carimbo no mesmo batch (`getAfter`) e as regras impõem intervalo mínimo (pet 45s, denúncia 20s, interesse 12s). `src/lib/rateLimit.js` + `createPet()`/`submitReport()`/`requestInterest()` em `writeBatch`.
 - **A2 (App Check)** ✅ — `initializeAppCheck` com **reCAPTCHA Enterprise** em `src/lib/firebase.js` (v3 clássico está sendo descontinuado), ativo só com `VITE_RECAPTCHA_SITE_KEY` e num try/catch pra nunca derrubar o app. App registrado, chave criada, secret no GitHub. Enforcement do Cloud Firestore: aplicar quando o painel mostrar ~100% "verificado".
 - **Pós-moderação** ✅ testado — denúncia com `petId` tem id determinístico (`${petId}__${uid}`, 1 por pessoa) e incrementa `pets.reportCount`; a busca esconde `reportCount >= 3` (link direto ainda abre). Painel admin mostra o contador e tem "Restaurar anúncio". Regra de `reports`: `get` do próprio doc liberado pelo sufixo `__<uid>` (pre-check de dedup).
-- **A1 / M1 (Cloudinary)** ⏳ — pendente, só ação de console; o código não muda.
+- **A1 / M1 (Cloudinary)** ✅ parcial — preset `petmatch_pets`: **Allowed formats** = `jpg,png,webp`; **incoming transformation** `c_limit,w_2000,h_2000,q_auto:good` (re-encoda no upload → **descarta EXIF/GPS**, resolve M1, e limita a 2000px). Residual: campo "Max file size" não existe nessa versão do console — mitigado pela transformação (uploads grandes são reduzidos na ingestão). Pasta não travada de propósito (o app usa `pets` e `profiles` no mesmo preset).
 - **M3 (dedup de repost)** — não feito nesta fase (optou-se por pós-moderação em vez do bloqueio por `donorId`+`name`+`city`). Reavaliar se aparecer spam de repost.
-
-#### Pendência de console da S3
-**Cloudinary** (Settings → Upload → preset `petmatch_pets`): manter **Unsigned**; **Allowed formats** `jpg,png,webp`; **Max file size** (~10 MB) e dimensão máxima; ligar **Strip metadata/EXIF** (resolve M1); fixar a **pasta** no preset; opcional: moderação + limite de origem.
 
 ### Fase S4 — Conformidade e endurecimento de plataforma
 - **B4** — Página de Política de Privacidade + Termos de Uso (LGPD); consentimento explícito no onboarding; mecanismo de exclusão de conta/dados.
