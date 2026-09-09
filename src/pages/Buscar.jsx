@@ -13,9 +13,8 @@ const speciesOptions = [
 const sizeOptions = ['Pequeno', 'Médio', 'Grande']
 const sexOptions = ['Macho', 'Fêmea']
 // TODO (v1.1): idade/temperamento exigem normalizar o schema dos pets antes de
-// virar filtro de query real — por enquanto ficam só como recorte visual do mockup.
-const ageOptions = ['Filhote', 'Adulto', 'Idoso']
-const temperamentOptions = ['Dócil', 'Brincalhão', 'Calmo', 'Independente']
+// virar filtro real — removidos da UI por enquanto (Fase 7.1 da auditoria de UX/UI)
+// pra não parecer que já funcionam. Reintroduzir quando o schema suportar.
 
 function Buscar() {
   const [pets, setPets] = useState([])
@@ -134,15 +133,6 @@ function Buscar() {
           </div>
 
           <div className="mb-6.5">
-            <h4 className="mb-3 text-[13px] font-bold text-ink">Idade</h4>
-            <div className="flex flex-wrap gap-2">
-              {ageOptions.map((opt) => (
-                <Chip key={opt}>{opt}</Chip>
-              ))}
-            </div>
-          </div>
-
-          <div className="mb-6.5">
             <h4 className="mb-3 text-[13px] font-bold text-ink">Sexo</h4>
             <div className="flex flex-wrap gap-2">
               {sexOptions.map((opt) => (
@@ -153,30 +143,14 @@ function Buscar() {
             </div>
           </div>
 
-          <div className="mb-6.5">
-            <h4 className="mb-3 text-[13px] font-bold text-ink">Temperamento</h4>
-            <div className="flex flex-wrap gap-2">
-              {temperamentOptions.map((opt) => (
-                <Chip key={opt}>{opt}</Chip>
-              ))}
-            </div>
-          </div>
-
           <div className="cursor-pointer text-[13.5px] font-semibold text-blue-mid" onClick={clearFilters}>
             Limpar filtros
           </div>
         </aside>
 
         <main>
-          <div className="mb-5 flex items-center justify-between">
-            <div className="text-[15px] text-ink-soft">
-              <strong className="text-ink">{loading ? '...' : pets.length}</strong> pets encontrados
-            </div>
-            <select className="rounded-lg border-[1.3px] border-line bg-white px-3 py-2 text-[13.5px] text-ink-soft">
-              <option>Mais recentes</option>
-              <option>Mais próximos</option>
-              <option>Mais jovens</option>
-            </select>
+          <div className="mb-5 text-[15px] text-ink-soft">
+            <strong className="text-ink">{loading ? '...' : pets.length}</strong> pets encontrados
           </div>
 
           {loading && <p className="text-ink-soft">Carregando pets...</p>}

@@ -7,7 +7,6 @@ import { isAdmin } from '../lib/admin'
 const navLinks = [
   { to: '/', label: 'Início' },
   { to: '/buscar', label: 'Encontrar um pet' },
-  { to: '/cadastrar', label: 'Cadastrar pet' },
 ]
 
 function Navbar() {

@@ -16,12 +16,21 @@ const featurePlacement = [
 
 function Home() {
   const [featured, setFeatured] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
-    listAvailablePets().then((pets) => {
-      if (!cancelled) setFeatured(pets.slice(0, 6))
-    })
+    listAvailablePets()
+      .then((pets) => {
+        if (!cancelled) setFeatured(pets.slice(0, 6))
+      })
+      .catch(() => {
+        if (!cancelled) setError('Não foi possível carregar os pets agora. Tente novamente em instantes.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
     return () => {
       cancelled = true
     }
@@ -45,25 +54,9 @@ function Home() {
             Sem venda. Sem cruza. Só o encontro entre quem tem um animal precisando de família e quem está pronto
             para recebê-lo.
           </p>
-          <div className="mb-4.5 flex gap-2.5">
-            <span className="cursor-pointer rounded-full border-[1.5px] border-blue-deep bg-[#EDF2F6] px-4.5 py-2.5 text-[14.5px] font-semibold text-blue-deep">
-              🐶 Cães
-            </span>
-            <span className="cursor-pointer rounded-full border-[1.5px] border-line bg-white px-4.5 py-2.5 text-[14.5px] font-semibold text-ink-soft">
-              🐱 Gatos
-            </span>
-          </div>
-          <div className="flex max-w-[460px] gap-0 rounded-xl border-[1.5px] border-line bg-white p-1.5">
-            <input
-              type="text"
-              defaultValue="Teresina, PI"
-              placeholder="Sua cidade"
-              className="flex-1 border-none bg-transparent px-3 py-2.5 text-[15px] outline-none"
-            />
-            <Button as={Link} to="/buscar" variant="primary">
-              Buscar
-            </Button>
-          </div>
+          <Button as={Link} to="/buscar" variant="primary" className="mb-1">
+            Ver pets disponíveis →
+          </Button>
           <div className="mt-5.5 flex items-center gap-2.5 text-sm text-ink-soft">
             <div className="flex">
               {[0, 1, 2].map((i) => (
@@ -99,11 +92,19 @@ function Home() {
               Ver todos →
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-4 auto-rows-[170px] md:grid-cols-6 md:auto-rows-[190px]">
-            {featured.map((pet, i) => (
-              <FeaturePetCard key={pet.id} pet={pet} className={featurePlacement[i]} />
-            ))}
-          </div>
+          {loading && <p className="text-ink-soft">Carregando pets...</p>}
+          {error && <p className="text-terracotta">{error}</p>}
+          {!loading && !error && featured.length === 0 && (
+            <p className="text-ink-soft">Nenhum pet disponível no momento.</p>
+          )}
+
+          {!loading && !error && featured.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 auto-rows-[170px] md:grid-cols-6 md:auto-rows-[190px]">
+              {featured.map((pet, i) => (
+                <FeaturePetCard key={pet.id} pet={pet} className={featurePlacement[i]} />
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="py-16" id="confianca">
@@ -181,6 +182,9 @@ function Home() {
           <div className="mb-7.5">
             <h2 className="font-display text-[30px] text-blue-deep">Quem já encontrou</h2>
           </div>
+          {/* TODO (v1.1): depoimentos ainda são placeholders fixos, não vêm de dados reais
+              (não existe schema de "depoimento" no Firestore hoje). Trocar por algo real
+              (ex: melhores avaliações públicas) antes de tratar como prova social de verdade. */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {[
               ['Procurava um cachorro de porte médio há meses. Encontrei a Mel pelo PetMatch e em três dias ela já estava em casa.', 'Mariana', 'Teresina, PI'],

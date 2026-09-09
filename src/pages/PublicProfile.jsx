@@ -73,7 +73,6 @@ function PublicProfile() {
           <p className="text-[13px] font-semibold text-terracotta">{TUTOR_TYPES[profile.tutorType]}</p>
           <div className="mt-1">
             <RatingBadge average={rating.average} count={rating.count} />
-            {rating.count === 0 && <span className="text-[13px] text-ink-soft">Ainda sem avaliações</span>}
           </div>
         </div>
       </div>

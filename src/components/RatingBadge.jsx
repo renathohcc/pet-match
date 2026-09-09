@@ -1,5 +1,7 @@
 function RatingBadge({ average, count }) {
-  if (!count) return null
+  if (!count) {
+    return <span className="text-[13px] text-ink-soft">Ainda sem avaliações</span>
+  }
 
   return (
     <span className="text-[13px] font-semibold text-terracotta">

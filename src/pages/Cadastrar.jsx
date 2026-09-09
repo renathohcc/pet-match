@@ -103,10 +103,7 @@ function Cadastrar() {
     setSubmitError(null)
 
     try {
-      const photoUrls = []
-      for (const file of photos) {
-        photoUrls.push(await uploadPetPhoto(file))
-      }
+      const photoUrls = await Promise.all(photos.map((file) => uploadPetPhoto(file)))
 
       const image = photoUrls[0] ?? ''
       const contactName = profile?.displayName || user.displayName || 'Doador'
