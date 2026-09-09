@@ -4,6 +4,7 @@ import Container from '../components/Container'
 import Button from '../components/Button'
 import { FeaturePetCard } from '../components/PetCard'
 import { listAvailablePets } from '../lib/pets'
+import { listHomeTestimonials } from '../lib/reviews'
 
 const featurePlacement = [
   'col-span-2 row-span-2',
@@ -18,6 +19,21 @@ function Home() {
   const [featured, setFeatured] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [testimonials, setTestimonials] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    listHomeTestimonials(3)
+      .then((items) => {
+        if (!cancelled) setTestimonials(items)
+      })
+      .catch(() => {
+        if (!cancelled) setTestimonials([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -79,7 +95,7 @@ function Home() {
             />
           </div>
           <div className="absolute bottom-6.5 left-4 max-w-[230px] rounded-xl border border-line bg-white p-4.5 text-[13.5px] font-semibold text-blue-deep shadow-[0_12px_28px_rgba(22,50,79,.14)] md:-left-6">
-            "Ela só precisava de alguém disposto a esperar." — sobre a Mel, adotada via PetMatch
+            "Às vezes o que falta não é sorte — é alguém disposto a esperar."
           </div>
         </div>
       </section>
@@ -111,7 +127,7 @@ function Home() {
           <div className="grid grid-cols-1 items-center gap-10 rounded-[20px] bg-blue-deep p-9 text-cream md:grid-cols-2 md:p-13">
             <div>
               <h2 className="max-w-[420px] font-display text-[28px] text-cream">
-                O PetMatch conecta pessoas e animais. A adoção é feita direto com quem cuida do pet.
+                O Adota.THE conecta pessoas e animais. A adoção é feita direto com quem cuida do pet.
               </h2>
               <p className="mt-3 max-w-[420px] text-base text-[#C7D5E1]">
                 Sem loja, sem comissão, sem cadastro de venda. Cada anúncio representa um animal real, precisando de
@@ -178,32 +194,38 @@ function Home() {
           </div>
         </section>
 
-        <section className="py-16">
-          <div className="mb-7.5">
-            <h2 className="font-display text-[30px] text-blue-deep">Quem já encontrou</h2>
-          </div>
-          {/* TODO (v1.1): depoimentos ainda são placeholders fixos, não vêm de dados reais
-              (não existe schema de "depoimento" no Firestore hoje). Trocar por algo real
-              (ex: melhores avaliações públicas) antes de tratar como prova social de verdade. */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {[
-              ['Procurava um cachorro de porte médio há meses. Encontrei a Mel pelo PetMatch e em três dias ela já estava em casa.', 'Mariana', 'Teresina, PI'],
-              ['Uso pra divulgar os resgates da nossa ONG. É bem mais fácil que depender só do Instagram.', 'João', 'Voluntário em ONG'],
-              ['Falei direto com quem estava cuidando do Fred pelo WhatsApp. Sem cadastro complicado, sem enrolação.', 'Luiza', 'Protetora independente'],
-            ].map(([quote, name, role]) => (
-              <div key={name} className="rounded-2xl border border-line bg-white p-6.5">
-                <p className="mb-4.5 text-[15.5px] italic text-ink">"{quote}"</p>
-                <div className="flex items-center gap-2.5">
-                  <div className="h-8 w-8 rounded-full bg-blue-mid" />
-                  <div>
-                    <strong className="block text-sm">{name}</strong>
-                    <span className="text-[12.5px] text-ink-soft">{role}</span>
+        {testimonials.length > 0 && (
+          <section className="py-16">
+            <div className="mb-7.5">
+              <h2 className="font-display text-[30px] text-blue-deep">Quem já encontrou</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {testimonials.map((t) => (
+                <Link
+                  key={t.id}
+                  to={`/pet/${t.petId}`}
+                  className="block rounded-2xl border border-line bg-white p-6.5 transition-shadow hover:shadow-[0_12px_28px_rgba(22,50,79,.1)]"
+                >
+                  <p className="mb-4.5 text-[15.5px] italic text-ink">"{t.quote}"</p>
+                  <div className="flex items-center gap-2.5">
+                    {t.photoURL ? (
+                      <img src={t.photoURL} alt={t.name} className="h-8 w-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-blue-mid" />
+                    )}
+                    <div>
+                      <strong className="block text-sm">{t.name}</strong>
+                      <span className="text-[12.5px] text-ink-soft">
+                        {t.petName ? `Adotou ${t.petName}` : 'Adoção concluída'}
+                        {t.role ? ` · ${t.role}` : ''}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </Container>
     </>
   )

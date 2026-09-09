@@ -1,5 +1,7 @@
 import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import { db } from './firebase'
+import { getPublicProfile } from './users'
+import { getPetById } from './pets'
 
 export const REVIEW_DIRECTIONS = {
   donor_to_adopter: 'donor_to_adopter',
@@ -46,6 +48,44 @@ export async function listAllReviews() {
   const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+/**
+ * Melhores avaliações públicas pra usar como depoimentos reais na Home:
+ * nota alta, com comentário escrito, e sem recurso aberto contra elas.
+ * Enriquece com nome/foto de quem avaliou e o pet mencionado.
+ */
+export async function listHomeTestimonials(max = 3) {
+  const [reviews, disputes] = await Promise.all([listAllReviews(), listAllDisputes()])
+  const disputed = new Set(disputes.map((d) => d.id))
+
+  const candidates = reviews
+    .filter(
+      (r) =>
+        r.direction === REVIEW_DIRECTIONS.adopter_to_donor &&
+        r.rating >= 4 &&
+        (r.comment || '').trim() &&
+        !disputed.has(r.id)
+    )
+    .slice(0, max)
+
+  return Promise.all(
+    candidates.map(async (r) => {
+      const [author, pet] = await Promise.all([
+        getPublicProfile(r.fromUserId),
+        getPetById(r.petId),
+      ])
+      return {
+        id: r.id,
+        quote: r.comment.trim(),
+        name: author.displayName,
+        photoURL: author.photoURL,
+        role: pet?.city || (author.tutorType === 'ong' ? 'ONG / protetor(a)' : 'Tutor(a) independente'),
+        petId: r.petId,
+        petName: pet?.name || '',
+      }
+    })
+  )
 }
 
 /** Remove uma avaliação permanentemente (admin only, ver firestore.rules). */
