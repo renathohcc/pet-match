@@ -1,0 +1,44 @@
+name: Deploy Firestore rules
+
+# O único perímetro de segurança do projeto são as Security Rules. Publicá-las
+# pelo CI (e não à mão no console) garante que o que está em produção é sempre
+# o que passou por review no repositório — sem divergência silenciosa.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - firebase.json
+      - .github/workflows/firestore-rules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firestore-rules
+  cancel-in-progress: false
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Service account restrito (papel "Firebase Rules Admin" só) — JSON
+      # inteiro guardado no secret FIREBASE_SERVICE_ACCOUNT.
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy rules
+        run: npx -y firebase-tools@13 deploy --only firestore:rules --project "$FIREBASE_PROJECT_ID" --non-interactive
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}

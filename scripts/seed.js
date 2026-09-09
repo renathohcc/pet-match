@@ -3,25 +3,35 @@
 // Uso: npm run seed
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { initializeApp, cert } from 'firebase-admin/app'
+import { initializeApp, cert, applicationDefault } from 'firebase-admin/app'
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { mockPets } from '../src/data/mockPets.js'
 
-const keyPath = fileURLToPath(new URL('./serviceAccountKey.json', import.meta.url))
-
-let serviceAccount
-try {
-  serviceAccount = JSON.parse(readFileSync(keyPath, 'utf-8'))
-} catch {
-  console.error(
-    'scripts/serviceAccountKey.json não encontrado.\n' +
-      'Gere em: Firebase Console > Configurações do projeto > Contas de serviço > Gerar nova chave privada.\n' +
-      'Salve o arquivo em scripts/serviceAccountKey.json (já está no .gitignore, nunca commitar).'
-  )
-  process.exit(1)
+// A chave de service account NUNCA deve ficar dentro do repositório nem numa
+// pasta sincronizada (OneDrive/Drive) — ela ignora todas as Security Rules.
+// Prefira apontar GOOGLE_APPLICATION_CREDENTIALS para um caminho fora do
+// projeto (ex: %USERPROFILE%\.secrets\adota-the-admin.json). O fallback pro
+// arquivo local em scripts/ continua funcionando (segue no .gitignore), mas
+// é o caminho menos seguro.
+function loadCredential() {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    return applicationDefault()
+  }
+  const keyPath = fileURLToPath(new URL('./serviceAccountKey.json', import.meta.url))
+  try {
+    return cert(JSON.parse(readFileSync(keyPath, 'utf-8')))
+  } catch {
+    console.error(
+      'Credencial de admin não encontrada.\n' +
+        'Opção recomendada: defina GOOGLE_APPLICATION_CREDENTIALS apontando para a\n' +
+        'chave salva FORA do projeto (nunca em pasta sincronizada).\n' +
+        'Gere em: Firebase Console > Configurações do projeto > Contas de serviço > Gerar nova chave privada.'
+    )
+    process.exit(1)
+  }
 }
 
-initializeApp({ credential: cert(serviceAccount) })
+initializeApp({ credential: loadCredential() })
 const db = getFirestore()
 
 async function seed() {

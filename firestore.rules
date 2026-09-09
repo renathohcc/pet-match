@@ -11,11 +11,20 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == donorId;
     }
 
-    // Admin único do site — pode excluir pets adotados (o dono do anúncio
-    // perde essa permissão depois do "Adotado", ver rule de pets abaixo) e
-    // remover avaliações comprovadamente abusivas após um recurso.
+    // Admins do site — podem excluir pets adotados (o dono do anúncio perde
+    // essa permissão depois do "Adotado", ver rule de pets abaixo) e remover
+    // avaliações comprovadamente abusivas após um recurso.
+    // Lista (não um único UID) pra ter redundância: perder uma conta não
+    // pode significar perder toda a moderação. Manter em sincronia com
+    // ADMIN_UIDS em src/lib/admin.js.
+    function adminUids() {
+      return [
+        'vJwhGPjI6eYVyl7XAfMevNKfJHR2',
+      ];
+    }
+
     function isAdmin() {
-      return isSignedIn() && request.auth.uid == 'vJwhGPjI6eYVyl7XAfMevNKfJHR2';
+      return isSignedIn() && request.auth.uid in adminUids();
     }
 
     function petDonorId(petId) {
@@ -29,6 +38,20 @@ service cloud.firestore {
     function hasValidSurvey(direction, survey) {
       return (direction == 'donor_to_adopter' && survey.keys().hasAll(['facilitou', 'voltariaUsar']))
         || (direction == 'adopter_to_donor' && survey.keys().hasAll(['correspondeuAnuncio', 'jaTinhaPet', 'experiencia']));
+    }
+
+    // Doc de perfil é público (leitura por qualquer um) — então a escrita
+    // precisa ser estritamente validada: só as chaves conhecidas, tipos
+    // certos e tamanhos limitados. Sem isso, o dono do próprio doc podia
+    // gravar qualquer campo/tamanho num doc mundialmente legível
+    // (impersonação via displayName, hospedagem de blob, etc).
+    function hasValidUserShape(data) {
+      return data.keys().hasOnly(['displayName', 'photoURL', 'tutorType', 'onboarded'])
+        && data.keys().hasAll(['displayName', 'tutorType'])
+        && data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 60
+        && (!data.keys().hasAny(['photoURL']) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.tutorType in ['independente', 'ong']
+        && (!data.keys().hasAny(['onboarded']) || data.onboarded is bool);
     }
 
     function hasValidPetShape(data) {
@@ -79,7 +102,16 @@ service cloud.firestore {
       // já que reviews também são públicas. Nada aqui é mais sensível do que
       // o que já é exposto via contactName do pet.
       allow read: if true;
-      allow write: if isSignedIn() && request.auth.uid == userId;
+
+      // `write` dividido em create/update (nunca delete — apagar o próprio
+      // doc quebra referências em pets/reviews). Ambos com shape validado.
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && hasValidUserShape(request.resource.data);
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && hasValidUserShape(request.resource.data);
+      allow delete: if false;
     }
 
     // Manifestação de interesse num pet — precisa do aceite do doador antes

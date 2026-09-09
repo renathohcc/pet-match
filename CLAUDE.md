@@ -24,6 +24,9 @@ This repo is public and hosted via GitHub Pages — there is no server to hide s
 - The Firebase client SDK config (apiKey, authDomain, projectId, etc.) is **not secret by design** — it's meant to ship in the frontend bundle. Real protection comes from Firestore/Storage **Security Rules** and **authorized domains** configured in the Firebase console, not from hiding these values.
 - Local Firebase config still goes through `.env.local` (gitignored) for convenience; production values are injected via GitHub Actions Secrets at build time — never hardcoded in committed files.
 - Never commit paid third-party API keys, server credentials, or anything that assumes a trusted backend — there isn't one here.
+- The **Firebase Admin service-account key** bypasses all Security Rules. It must never live inside the repo or a synced folder (OneDrive/Drive). Point `GOOGLE_APPLICATION_CREDENTIALS` at a key stored outside the project (e.g. `%USERPROFILE%\.secrets\`) for `npm run seed`. If a key ever sat in a synced location, rotate it in the Firebase console.
+- **Firestore Security Rules are the only security perimeter.** `firestore.rules` is deployed by CI (`.github/workflows/firestore-rules.yml`) on every push to `main` that touches it — never edit rules directly in the Firebase console, or prod will silently diverge from the repo. The workflow needs the `FIREBASE_SERVICE_ACCOUNT` secret (a restricted "Firebase Rules Admin" service account JSON).
+- `isAdmin()` is a list of UIDs kept in sync between `firestore.rules` (`adminUids()`) and `src/lib/admin.js` (`ADMIN_UIDS`) — keep at least two so losing one account doesn't lose all moderation.
 
 See the full build plan at `C:\Users\renat\.claude\plans\timo-agora-que-o-parallel-mccarthy.md` for the phased implementation order (design system → Firebase setup/rules → MVP features → CI/CD → v1.1).
 
