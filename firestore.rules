@@ -326,7 +326,13 @@ service cloud.firestore {
     // pode criar, só sobre si mesmo (reportedBy == uid), sem poder editar
     // ou apagar depois de enviada.
     match /reports/{reportId} {
-      allow read, delete: if isAdmin();
+      // `list` (listAllReports) e `delete` só admin. `get` também pelo
+      // próprio denunciante, quando o id termina em `__<uid>` — é o que
+      // permite o pre-check de "já denunciei esse anúncio?" em submitReport
+      // (mesmo padrão do `interests`; cobre inclusive o get de doc que ainda
+      // não existe, sem tocar em `resource`).
+      allow get: if isAdmin() || (isSignedIn() && reportId.matches('^.*__' + request.auth.uid + '$'));
+      allow list, delete: if isAdmin();
       allow create: if isSignedIn()
         && request.resource.data.reportedBy == request.auth.uid
         && request.resource.data.reason in ['fraude', 'animal_doente', 'anuncio_falso', 'conteudo_inadequado', 'outro']
