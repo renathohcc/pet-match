@@ -163,7 +163,7 @@ function PetDetail() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading
     setInterestsLoading(true)
 
-    listInterests(pet.id)
+    listInterests(pet.id, pet.donorId)
       .then((list) => {
         if (!cancelled) setInterestsCount(list.length)
       })

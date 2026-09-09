@@ -31,13 +31,16 @@ async function enrichWithProfile(interest) {
 }
 
 /**
- * Todos os pedidos de interesse de um pet (qualquer status), com nome/foto —
- * pro painel "Pedidos de interesse" do doador.
+ * Todos os pedidos de interesse de UM pet (qualquer status), com nome/foto —
+ * pro teaser de `PetDetail.jsx`. Precisa de `donorId` (não só `petId`): a
+ * regra do Firestore só libera uma QUERY de lista quando ela consegue provar
+ * a permissão comparando o mesmo campo do `where()` — `donorId` tem essa
+ * comparação direta na regra, `petId` sozinho não tem (ver `listReceivedInterests`
+ * abaixo, que já faz essa query; aqui só filtra pro pet específico depois).
  */
-export async function listInterests(petId) {
-  const q = query(collection(db, 'interests'), where('petId', '==', petId))
-  const snapshot = await getDocs(q)
-  return Promise.all(snapshot.docs.map((d) => enrichWithProfile(d.data())))
+export async function listInterests(petId, donorId) {
+  const all = await listReceivedInterests(donorId)
+  return all.filter((i) => i.petId === petId)
 }
 
 /**

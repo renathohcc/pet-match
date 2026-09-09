@@ -93,14 +93,23 @@ service cloud.firestore {
       // Só o próprio interessado (seu pedido) ou o doador do pet (todos os
       // pedidos do anúncio dele) podem ler — antes disso vazava pra
       // qualquer usuário logado quem se interessou por qual pet.
-      // "Meu próprio pedido" é checado pelo id do doc (`${petId}_${uid}`),
-      // não por `resource.data.userId` — o doc quase sempre AINDA NÃO
-      // existe (primeira visita de quem nunca manifestou interesse), e
-      // `resource` vem null nesse caso; acessar `resource.data` nessa hora
-      // dá erro e nega a leitura (é o que travava o botão em "Carregando...").
+      //
+      // Precisa de DOIS jeitos de checar "é meu próprio pedido":
+      // - `resource.data.userId == uid`: obrigatório pras QUERIES de lista
+      //   (`listMyInterests`, `where('userId','==',uid)`) — o Firestore só
+      //   libera uma query quando consegue provar a regra usando os MESMOS
+      //   campos do `where()`; ele não entende que o regex no id do doc é
+      //   "a mesma coisa" que o campo, então uma lista com só o regex abaixo
+      //   falha inteira com permission-denied (não filtra, nega tudo).
+      // - `interestId.matches(...)`: cobre o `getMyInterest` (get() num doc
+      //   que quase sempre AINDA NÃO existe, primeira visita de quem nunca
+      //   manifestou interesse — `resource` vem null nesse caso, e
+      //   `resource.data.userId` explode; é o que travava o botão em
+      //   "Carregando..." antes). Só serve pra get() de doc único, não ajuda
+      //   em lista nenhuma, mas não atrapalha (list nunca bate nesse ramo).
       allow read: if isSignedIn()
         && (interestId.matches('^.*_' + request.auth.uid + '$')
-          || (resource != null && resource.data.donorId == request.auth.uid));
+          || (resource != null && (resource.data.donorId == request.auth.uid || resource.data.userId == request.auth.uid)));
 
       allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid
