@@ -6,6 +6,7 @@ import Container from '../components/Container'
 import Button from '../components/Button'
 import Chip from '../components/Chip'
 import ShareCard from '../components/ShareCard'
+import PublishSuccess from '../components/PublishSuccess'
 import { db } from '../lib/firebase'
 import { uploadPetPhoto } from '../lib/cloudinary'
 import { setPetContact } from '../lib/petContacts'
@@ -41,6 +42,7 @@ function Cadastrar() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const [createdPet, setCreatedPet] = useState(null)
+  const [shareStep, setShareStep] = useState('choice') // 'choice' | 'image'
 
   const [name, setName] = useState('')
   const [species, setSpecies] = useState('cão')
@@ -138,13 +140,21 @@ function Cadastrar() {
         <Helmet>
           <title>Anúncio publicado! — PetMatch</title>
         </Helmet>
-        <ShareCard
-          pet={createdPet}
-          subtitle="Anúncio publicado!"
-          title={`Compartilhe ${createdPet.name} nas redes`}
-          continueLabel="Ver meu anúncio →"
-          onContinue={() => navigate(`/pet/${createdPet.id}`)}
-        />
+        {shareStep === 'choice' ? (
+          <PublishSuccess
+            pet={createdPet}
+            onGenerateImage={() => setShareStep('image')}
+            onContinue={() => navigate(`/pet/${createdPet.id}`)}
+          />
+        ) : (
+          <ShareCard
+            pet={createdPet}
+            subtitle="Anúncio publicado!"
+            title={`Compartilhe ${createdPet.name} nas redes`}
+            continueLabel="Ver meu anúncio →"
+            onContinue={() => navigate(`/pet/${createdPet.id}`)}
+          />
+        )}
       </Container>
     )
   }

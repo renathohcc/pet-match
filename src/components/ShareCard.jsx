@@ -3,10 +3,7 @@ import Cropper from 'react-easy-crop'
 import Button from './Button'
 import Chip from './Chip'
 import { generateShareImage, getSlotAspect, SHARE_FORMATS } from '../lib/shareImage'
-
-function getPetUrl(petId) {
-  return `${window.location.origin}/pet-match/pet/${petId}`
-}
+import { copyToClipboard, getPetUrl } from '../lib/shareLink'
 
 function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLabel, onContinue }) {
   const [formatId, setFormatId] = useState(SHARE_FORMATS[0].id)
@@ -31,19 +28,7 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
   async function handleCopyLink() {
     const url = getPetUrl(pet.id)
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url)
-      } else {
-        // Fallback pra navegadores/contextos sem Clipboard API (ex: http não-seguro)
-        const textarea = document.createElement('textarea')
-        textarea.value = url
-        textarea.style.position = 'fixed'
-        textarea.style.opacity = '0'
-        document.body.appendChild(textarea)
-        textarea.select()
-        document.execCommand('copy')
-        textarea.remove()
-      }
+      await copyToClipboard(url)
       setLinkCopied(true)
       setTimeout(() => setLinkCopied(false), 2000)
     } catch {
