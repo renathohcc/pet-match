@@ -7,6 +7,7 @@
 // com adminUids() em firestore.rules.
 export const ADMIN_UIDS = [
   'vJwhGPjI6eYVyl7XAfMevNKfJHR2',
+  'beq3RVcauLb9tMOyXFLm8OyTaUh1',
 ]
 
 export function isAdmin(uid) {
