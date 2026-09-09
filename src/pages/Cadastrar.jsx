@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import Container from '../components/Container'
 import Button from '../components/Button'
+import Chip from '../components/Chip'
 import ShareCard from '../components/ShareCard'
 import { db } from '../lib/firebase'
 import { uploadPetPhoto } from '../lib/cloudinary'
@@ -14,19 +15,6 @@ import { TUTOR_TYPES } from '../lib/users'
 import { generateUniquePetSlug } from '../lib/slug'
 
 const MAX_PHOTOS = 5
-
-function Pick({ selected, children, ...props }) {
-  return (
-    <span
-      className={`cursor-pointer rounded-full border-[1.4px] px-4.5 py-2.5 text-sm font-medium ${
-        selected ? 'border-blue-deep bg-blue-deep text-cream' : 'border-line bg-white text-ink-soft'
-      }`}
-      {...props}
-    >
-      {children}
-    </span>
-  )
-}
 
 function Field({ label, children }) {
   return (
@@ -203,8 +191,8 @@ function Cadastrar() {
               </Field>
               <Field label="Espécie">
                 <div className="flex flex-wrap gap-2.5">
-                  <Pick selected={species === 'cão'} onClick={() => setSpecies('cão')}>🐶 Cão</Pick>
-                  <Pick selected={species === 'gato'} onClick={() => setSpecies('gato')}>🐱 Gato</Pick>
+                  <Chip size="md" active={species === 'cão'} onClick={() => setSpecies('cão')}>🐶 Cão</Chip>
+                  <Chip size="md" active={species === 'gato'} onClick={() => setSpecies('gato')}>🐱 Gato</Chip>
                 </div>
               </Field>
             </div>
@@ -218,8 +206,8 @@ function Cadastrar() {
               </Field>
               <Field label="Sexo">
                 <div className="flex flex-wrap gap-2.5">
-                  <Pick selected={sex === 'Fêmea'} onClick={() => setSex('Fêmea')}>Fêmea</Pick>
-                  <Pick selected={sex === 'Macho'} onClick={() => setSex('Macho')}>Macho</Pick>
+                  <Chip size="md" active={sex === 'Fêmea'} onClick={() => setSex('Fêmea')}>Fêmea</Chip>
+                  <Chip size="md" active={sex === 'Macho'} onClick={() => setSex('Macho')}>Macho</Chip>
                 </div>
               </Field>
             </div>
@@ -227,7 +215,7 @@ function Cadastrar() {
               <Field label="Porte">
                 <div className="flex flex-wrap gap-2.5">
                   {['Pequeno', 'Médio', 'Grande'].map((s) => (
-                    <Pick key={s} selected={size === s} onClick={() => setSize(s)}>{s}</Pick>
+                    <Chip key={s} size="md" active={size === s} onClick={() => setSize(s)}>{s}</Chip>
                   ))}
                 </div>
               </Field>
@@ -267,9 +255,9 @@ function Cadastrar() {
               <legend className="mb-4.5 font-display text-xl font-semibold text-blue-deep">Temperamento</legend>
               <div className="flex flex-wrap gap-2.5">
                 {temperamentOptions.map((tag) => (
-                  <Pick key={tag} selected={temperament.includes(tag)} onClick={() => toggleTemperament(tag)}>
+                  <Chip key={tag} size="md" active={temperament.includes(tag)} onClick={() => toggleTemperament(tag)}>
                     {tag}
-                  </Pick>
+                  </Chip>
                 ))}
               </div>
             </fieldset>

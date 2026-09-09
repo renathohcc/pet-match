@@ -5,19 +5,11 @@ import { getPetById } from '../lib/pets'
 import { disputeReview, getReviewDispute } from '../lib/reviews'
 import { useAuth } from '../context/useAuth'
 import DisputeDialog from './DisputeDialog'
+import Stars from './Stars'
 
 const DIRECTION_LABEL = {
   adopter_to_donor: 'Avaliação como doador(a)',
   donor_to_adopter: 'Avaliação como adotante',
-}
-
-function Stars({ rating }) {
-  return (
-    <span className="text-terracotta" aria-label={`${rating} de 5 estrelas`}>
-      {'★'.repeat(rating)}
-      <span className="text-line">{'★'.repeat(5 - rating)}</span>
-    </span>
-  )
 }
 
 function ReviewsList({ reviews }) {

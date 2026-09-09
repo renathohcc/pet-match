@@ -3,6 +3,8 @@ import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import Container from '../components/Container'
 import Button from '../components/Button'
+import Chip from '../components/Chip'
+import Stars from '../components/Stars'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { getSiteStats } from '../lib/adminStats'
 import { listAllUsers, getPublicProfile, TUTOR_TYPES } from '../lib/users'
@@ -24,15 +26,6 @@ function StatCard({ label, value }) {
       <div className="font-display text-3xl text-blue-deep">{value}</div>
       <div className="mt-1 text-[13px] text-ink-soft">{label}</div>
     </div>
-  )
-}
-
-function Stars({ rating }) {
-  return (
-    <span className="text-terracotta">
-      {'★'.repeat(rating)}
-      <span className="text-line">{'★'.repeat(5 - rating)}</span>
-    </span>
   )
 }
 
@@ -366,18 +359,9 @@ function Admin() {
 
       <div className="mb-7.5 flex flex-wrap gap-2 border-b border-line pb-4">
         {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`cursor-pointer rounded-full border-[1.3px] px-4 py-2 text-[13.5px] font-medium transition-colors ${
-              tab === t.id
-                ? 'border-blue-deep bg-blue-deep text-cream'
-                : 'border-line bg-white text-ink-soft hover:border-blue-deep hover:text-blue-deep'
-            }`}
-          >
+          <Chip key={t.id} size="md" active={tab === t.id} onClick={() => setTab(t.id)}>
             {t.label}
-          </button>
+          </Chip>
         ))}
       </div>
 

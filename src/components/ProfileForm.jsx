@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Button from './Button'
+import Chip from './Chip'
 import AvatarCropDialog from './AvatarCropDialog'
 import { TUTOR_TYPES } from '../lib/users'
 import { uploadProfilePhoto } from '../lib/cloudinary'
@@ -80,18 +81,9 @@ function ProfileForm({
         <label className="mb-1.5 block text-[13.5px] font-semibold text-ink">Você é...</label>
         <div className="flex flex-wrap gap-2.5">
           {Object.entries(TUTOR_TYPES).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setTutorType(value)}
-              className={`cursor-pointer rounded-full border-[1.4px] px-4.5 py-2.5 text-sm font-medium transition-colors ${
-                tutorType === value
-                  ? 'border-blue-deep bg-blue-deep text-cream'
-                  : 'border-line bg-white text-ink-soft hover:border-blue-deep hover:text-blue-deep'
-              }`}
-            >
+            <Chip key={value} size="md" active={tutorType === value} onClick={() => setTutorType(value)}>
               {label}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>

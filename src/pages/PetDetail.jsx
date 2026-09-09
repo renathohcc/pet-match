@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import StatusBadge from '../components/StatusBadge'
+import Chip from '../components/Chip'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Modal from '../components/Modal'
 import ShareCard from '../components/ShareCard'
@@ -341,19 +342,14 @@ function PetDetail() {
               <h4 className="mb-3 text-[14.5px] font-bold text-blue-deep">Status do anúncio</h4>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(PET_STATUSES).map(([value, label]) => (
-                  <button
+                  <Chip
                     key={value}
-                    type="button"
                     disabled={updatingStatus}
+                    active={pet.status === value}
                     onClick={() => handleStatusChipClick(value)}
-                    className={`cursor-pointer rounded-full border-[1.3px] px-3.5 py-[7px] text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                      pet.status === value
-                        ? 'border-blue-deep bg-blue-deep text-cream'
-                        : 'border-line bg-white text-ink-soft hover:border-blue-deep hover:text-blue-deep'
-                    }`}
                   >
                     {label}
-                  </button>
+                  </Chip>
                 ))}
               </div>
 
