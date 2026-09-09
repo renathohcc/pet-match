@@ -4,7 +4,7 @@
 **Escopo:** segurança da plataforma, proteção dos dados dos usuários e sistemas anti-fraude.
 **Base de código analisada:** frontend React + Vite, `firestore.rules`, `.github/workflows/deploy.yml`, `scripts/`, integração Cloudinary.
 
-> Este é um documento de diagnóstico. Nenhuma alteração de segurança foi feita ainda — o roadmap ao final serve para planejar e aprovar cada fase separadamente.
+> Documento de diagnóstico + roadmap. **Progresso:** Fase S1 ✅ concluída (2026-09-09) · Fase S2 ✅ concluída (2026-09-09) · S3–S4 pendentes.
 
 ---
 
@@ -120,17 +120,17 @@ Perder a conta Google `vJwhGPjI6eYVyl7XAfMevNKfJHR2` (perda de acesso, suspensã
 
 > Cada fase será detalhada e aprovada separadamente. Ordem por risco × esforço.
 
-### Fase S1 — Contenção imediata (baixo esforço, alto impacto)
+### Fase S1 — Contenção imediata ✅
 - **C2** — Mover `serviceAccountKey.json` para fora do OneDrive (ex.: `%USERPROFILE%\.secrets\`), apontar `scripts/seed.js` via `GOOGLE_APPLICATION_CREDENTIALS`, e **rotacionar a chave** no console (revogar a antiga). Documentar em `CLAUDE.md`.
 - **C1** — Adicionar publicação de regras ao CI (`firebase deploy --only firestore:rules` com service account de CI restrito, em secret do Actions), disparada por mudança em `firestore.rules`. Alternativa mínima: checklist manual + verificação de diff documentada.
 - **C3 (parte)** — Endurecer as regras de `users`: manter leitura pública, mas validar escrita (só chaves conhecidas, tipos corretos, `displayName` 1–40 caracteres, tamanho total limitado); `allow delete: if false`. Novo helper `hasValidUserShape()`.
 - **A6** — Criar segundo admin (lista de UIDs em `firestore.rules` + `src/lib/admin.js`, ou custom claims) e documentar o procedimento de emergência.
 
-### Fase S2 — Endurecer regras e validação de conteúdo
-- **A3** — Expandir `hasValidPetShape`: limitar tamanho de `story` / `breed` / `health` / `temperament`; validar que `image` / `thumbs` casam com `^https://res\.cloudinary\.com/gmhrbocv/`; forçar `createdAt == request.time`; barrar `adopterId` na criação.
-- **A4** — Restringir leitura de `reviewDisputes` (só admin + os dois envolvidos); adicionar um booleano `underDispute` no próprio review (escrito por regra) para o `ReviewsList` esconder o comentário sem precisar ler o motivo. Avaliar tornar as respostas da pesquisa pós-adoção privadas (só agregado no admin), mantendo público apenas `rating` + `comment`.
-- **M2** — Validar formato de telefone no cliente (`Cadastrar.jsx`) e nas regras de `petContacts`.
-- **A5** — Parar de excluir `reports`; adicionar `status` (`aberta` / `resolvida` / `descartada`) + `resolvedBy` + `resolvedAt` + nota; validar shape e limitar tamanho na criação.
+### Fase S2 — Endurecer regras e validação de conteúdo ✅
+- **A3** ✅ — `hasValidPetShape` expandido: `story`/`breed`/`age`/`neighborhood`/`contactName`/`contactType` com limite de tamanho, `health`/`temperament` como listas limitadas, `image` obrigatoriamente URL do Cloudinary `gmhrbocv` (ou vazia), `thumbs` lista ≤ 4. Criação força `createdAt == request.time` e barra `adopterId`.
+- **A4** ✅ — `reviewDisputes` agora só lê admin + as duas pessoas envolvidas. Booleano `underDispute` na própria review (escrito via `writeBatch`, permitido por regra restrita) é o sinal público — `ReviewsList` não lê mais `reviewDisputes`. *(Pesquisa pós-adoção continua pública por ora — mover para S3 se quiser.)*
+- **M2** ✅ — `isValidBrPhone()` valida o WhatsApp no `Cadastrar.jsx`; regras de `petContacts` exigem string 8–25 e só as chaves `whatsapp`/`donorId`.
+- **A5** ✅ — `reports` não é mais apagado ao resolver: ganha `status` (`aberta`/`resolvida`/`descartada`) + `resolvedBy` + `resolvedAt`. Criação valida `reason` (lista fechada), `details` ≤ 1000 e `status == 'aberta'`. Painel admin passa a ter "Resolvida" e "Descartar".
 
 ### Fase S3 — Anti-abuso e anti-fraude
 - **A1 / A2 / M1** — Habilitar **Firebase App Check** (reCAPTCHA v3 no web) — corta a maior parte do abuso programático do Firestore. Auditar e endurecer o preset do Cloudinary no painel: tipos permitidos, tamanho máximo, remoção de metadados (resolve **M1**), moderação (`aws_rek` ou fila manual), pasta fixa no preset (ignorar o `folder` do cliente).

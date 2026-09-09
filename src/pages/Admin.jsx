@@ -10,7 +10,8 @@ import { getSiteStats } from '../lib/adminStats'
 import { listAllUsers, getPublicProfile, TUTOR_TYPES } from '../lib/users'
 import { listMyPets } from '../lib/pets'
 import { deleteReview, getUserRatingSummary, listAllDisputes, listAllReviews, rejectDispute, upholdDispute } from '../lib/reviews'
-import { listAllReports, resolveReport, REPORT_REASONS } from '../lib/reports'
+import { isOpenReport, listAllReports, resolveReport, REPORT_REASONS } from '../lib/reports'
+import { useAuth } from '../context/useAuth'
 
 const TABS = [
   { id: 'metrics', label: '📊 Métricas' },
@@ -313,6 +314,7 @@ function DisputesTab() {
 }
 
 function ReportsTab() {
+  const { user } = useAuth()
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
   const [confirmTarget, setConfirmTarget] = useState(null)
@@ -320,8 +322,9 @@ function ReportsTab() {
   function loadReports() {
     setLoading(true)
     listAllReports().then(async (list) => {
+      const open = list.filter(isOpenReport)
       const enriched = await Promise.all(
-        list.map(async (r) => {
+        open.map(async (r) => {
           const reporter = await getPublicProfile(r.reportedBy)
           return { ...r, reporterName: reporter.displayName }
         })
@@ -336,9 +339,9 @@ function ReportsTab() {
     loadReports()
   }, [])
 
-  async function handleResolve() {
+  async function handleResolve(outcome) {
     const target = confirmTarget
-    await resolveReport(target.id)
+    await resolveReport(target.id, user.uid, outcome)
     setReports((prev) => prev.filter((r) => r.id !== target.id))
     setConfirmTarget(null)
   }
@@ -367,9 +370,12 @@ function ReportsTab() {
           <div className="mt-2 text-[12px] font-semibold text-terracotta">{REPORT_REASONS[r.reason] ?? r.reason}</div>
           {r.details && <p className="mt-1 text-[13.5px] text-ink-soft">{r.details}</p>}
 
-          <div className="mt-3 flex justify-end">
-            <Button variant="ghost" onClick={() => setConfirmTarget(r)}>
-              Marcar como resolvida
+          <div className="mt-3 flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setConfirmTarget({ ...r, outcome: 'descartada' })}>
+              Descartar
+            </Button>
+            <Button variant="terracotta" onClick={() => setConfirmTarget({ ...r, outcome: 'resolvida' })}>
+              Resolvida (ação tomada)
             </Button>
           </div>
         </div>
@@ -377,10 +383,14 @@ function ReportsTab() {
 
       <ConfirmDialog
         open={Boolean(confirmTarget)}
-        title="Marcar denúncia como resolvida"
-        message="A denúncia será removida da lista. Confirma que já foi analisada?"
+        title={confirmTarget?.outcome === 'descartada' ? 'Descartar denúncia' : 'Marcar denúncia como resolvida'}
+        message={
+          confirmTarget?.outcome === 'descartada'
+            ? 'A denúncia sai da lista mas fica no histórico (sem procedência).'
+            : 'A denúncia sai da lista mas fica no histórico, registrando que houve ação.'
+        }
         confirmLabel="Confirmar"
-        onConfirm={handleResolve}
+        onConfirm={() => handleResolve(confirmTarget.outcome)}
         onCancel={() => setConfirmTarget(null)}
       />
     </div>

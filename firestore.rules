@@ -55,15 +55,33 @@ service cloud.firestore {
         && (!data.keys().hasAny(['onboarded']) || data.onboarded is bool);
     }
 
+    // Só URLs de imagem do nosso Cloudinary (ou vazio, quando o anúncio não
+    // tem foto) — impede apontar `image`/`thumbs` pra domínio externo
+    // (rastreamento, spoofing de preview).
+    function isOwnImageUrl(url) {
+      return url is string && (url == '' || url.matches('https://res[.]cloudinary[.]com/gmhrbocv/.*'));
+    }
+
     function hasValidPetShape(data) {
-      return data.keys().hasAll(['name', 'species', 'size', 'sex', 'city', 'status', 'donorId', 'createdAt'])
+      return data.keys().hasAll(['name', 'species', 'size', 'sex', 'city', 'status', 'donorId', 'createdAt',
+          'age', 'breed', 'story', 'health', 'temperament', 'neighborhood', 'image', 'thumbs', 'contactName', 'contactType'])
         && data.name is string && data.name.size() > 0 && data.name.size() <= 60
         && data.species in ['cão', 'gato']
         && data.size in ['Pequeno', 'Médio', 'Grande']
         && data.sex in ['Macho', 'Fêmea']
-        && data.city is string && data.city.size() > 0
+        && data.city is string && data.city.size() > 0 && data.city.size() <= 80
         && data.status in ['disponivel', 'adotado']
-        && data.donorId is string;
+        && data.donorId is string
+        && data.age is string && data.age.size() <= 40
+        && data.breed is string && data.breed.size() <= 60
+        && data.story is string && data.story.size() <= 2000
+        && data.health is list && data.health.size() <= 12
+        && data.temperament is list && data.temperament.size() <= 12
+        && data.neighborhood is string && data.neighborhood.size() > 0 && data.neighborhood.size() <= 80
+        && data.contactName is string && data.contactName.size() > 0 && data.contactName.size() <= 60
+        && data.contactType is string && data.contactType.size() <= 40
+        && isOwnImageUrl(data.image)
+        && data.thumbs is list && data.thumbs.size() <= 4;
     }
 
     match /pets/{petId} {
@@ -74,7 +92,11 @@ service cloud.firestore {
 
       allow create: if isSignedIn()
         && hasValidPetShape(request.resource.data)
-        && request.resource.data.donorId == request.auth.uid;
+        && request.resource.data.donorId == request.auth.uid
+        // createdAt sempre = agora (não dá pra pré/pós-datar pra manipular
+        // ordenação); adopterId nunca vem na criação (só via confirmação).
+        && request.resource.data.createdAt == request.time
+        && !request.resource.data.keys().hasAny(['adopterId']);
 
       allow update: if (isOwner(resource.data.donorId)
           && hasValidPetShape(request.resource.data)
@@ -180,7 +202,10 @@ service cloud.firestore {
 
       allow create, update: if isSignedIn()
         && request.resource.data.donorId == request.auth.uid
-        && petDonorId(petId) == request.auth.uid;
+        && petDonorId(petId) == request.auth.uid
+        && request.resource.data.keys().hasOnly(['whatsapp', 'donorId'])
+        && request.resource.data.whatsapp is string
+        && request.resource.data.whatsapp.size() >= 8 && request.resource.data.whatsapp.size() <= 25;
 
       allow delete: if false;
     }
@@ -207,7 +232,16 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.donorId == request.resource.data.toUserId)
         );
 
-      allow update: if false;
+      // Imutável, EXCETO o booleano `underDispute` — é como o público sabe
+      // que deve esconder o comentário (sem precisar ler reviewDisputes, que
+      // é privado). Só a pessoa avaliada liga (ao recorrer) e só o admin
+      // desliga (ao rejeitar o recurso). Nota/comentário nunca mudam.
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['underDispute'])
+        && (
+          (resource.data.toUserId == request.auth.uid && request.resource.data.underDispute == true)
+          || (isAdmin() && request.resource.data.underDispute == false)
+        );
       // Avaliação normalmente não é excluída (histórico), mas o admin pode
       // remover uma comprovadamente abusiva depois de analisar um recurso.
       allow delete: if isAdmin();
@@ -219,10 +253,14 @@ service cloud.firestore {
     // só o texto livre é escondido) — resolução manual pelo admin por
     // enquanto (sem painel de moderação ainda).
     match /reviewDisputes/{reviewId} {
-      // Leitura pública só pra saber "essa avaliação está em recurso" (pra
-      // esconder o comentário de qualquer visitante) — o motivo do recurso
-      // também fica visível, é a versão do lado avaliado sobre o ocorrido.
-      allow read: if true;
+      // Leitura restrita: o motivo do recurso (versão do lado avaliado, texto
+      // livre) não é do público. Só o admin e as duas pessoas envolvidas.
+      // O público sabe que há recurso pelo booleano `underDispute` na review.
+      allow read: if isSignedIn() && (
+        isAdmin()
+        || (resource != null && (resource.data.disputedBy == request.auth.uid
+          || resource.data.fromUserId == request.auth.uid))
+      );
 
       allow create: if isSignedIn()
         && request.resource.data.disputedBy == request.auth.uid
@@ -238,8 +276,16 @@ service cloud.firestore {
     // ou apagar depois de enviada.
     match /reports/{reportId} {
       allow read, delete: if isAdmin();
-      allow create: if isSignedIn() && request.resource.data.reportedBy == request.auth.uid;
-      allow update: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.reportedBy == request.auth.uid
+        && request.resource.data.reason in ['fraude', 'animal_doente', 'anuncio_falso', 'conteudo_inadequado', 'outro']
+        && request.resource.data.details is string && request.resource.data.details.size() <= 1000
+        && request.resource.data.status == 'aberta';
+      // Resolução = mudança de status (mantém histórico de moderação), nunca
+      // apagar. Só o admin, e só esses campos.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedBy', 'resolvedAt'])
+        && request.resource.data.status in ['resolvida', 'descartada'];
     }
 
     // Notificações no sino da Navbar — todas endereçadas a um `userId` só (o

@@ -15,6 +15,7 @@ import { useProfile } from '../context/useProfile'
 import { CITIES, neighborhoodsForCity } from '../data/locations'
 import { TUTOR_TYPES } from '../lib/users'
 import { generateUniquePetSlug } from '../lib/slug'
+import { isValidBrPhone } from '../lib/phone'
 
 const MAX_PHOTOS = 5
 
@@ -89,6 +90,12 @@ function Cadastrar() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!user) return
+
+    if (!isValidBrPhone(whatsapp)) {
+      setSubmitError('Confira o WhatsApp: informe DDD + número, ex. (86) 99999-0000.')
+      setStep(3)
+      return
+    }
 
     setSubmitting(true)
     setSubmitError(null)
@@ -197,6 +204,7 @@ function Cadastrar() {
                   className={fieldClass}
                   type="text"
                   placeholder="Ex: Mel"
+                  maxLength={60}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -237,6 +245,7 @@ function Cadastrar() {
                   className={fieldClass}
                   type="text"
                   placeholder="Ex: SRD, Labrador..."
+                  maxLength={60}
                   value={breed}
                   onChange={(e) => setBreed(e.target.value)}
                 />
@@ -281,6 +290,7 @@ function Cadastrar() {
                 className={`${fieldClass} min-h-[100px] resize-y`}
                 placeholder="Conte como encontrou o animal, o temperamento dele e o que ele precisa em um novo lar..."
                 value={story}
+                maxLength={2000}
                 onChange={(e) => setStory(e.target.value)}
               />
             </fieldset>
@@ -341,7 +351,8 @@ function Cadastrar() {
               <Field label="WhatsApp para contato">
                 <input
                   className={fieldClass}
-                  type="text"
+                  type="tel"
+                  inputMode="tel"
                   placeholder="(00) 00000-0000"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}

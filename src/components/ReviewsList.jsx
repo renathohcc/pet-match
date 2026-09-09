@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getPublicProfile } from '../lib/users'
 import { getPetById } from '../lib/pets'
-import { disputeReview, getReviewDispute } from '../lib/reviews'
+import { disputeReview } from '../lib/reviews'
 import { useAuth } from '../context/useAuth'
 import DisputeDialog from './DisputeDialog'
 import Stars from './Stars'
@@ -25,12 +25,11 @@ function ReviewsList({ reviews }) {
 
     Promise.all(
       reviews.map(async (review) => {
-        const [reviewer, pet, dispute] = await Promise.all([
+        const [reviewer, pet] = await Promise.all([
           getPublicProfile(review.fromUserId),
           getPetById(review.petId),
-          getReviewDispute(review.petId, review.direction),
         ])
-        return { ...review, reviewer, petName: pet?.name ?? null, dispute }
+        return { ...review, reviewer, petName: pet?.name ?? null }
       })
     ).then((result) => {
       if (!cancelled) {
@@ -49,7 +48,7 @@ function ReviewsList({ reviews }) {
     await disputeReview({ petId, direction, disputedBy: user.uid, reason, review: { fromUserId, toUserId, rating, comment } })
     setEnriched((prev) =>
       prev.map((r) =>
-        r.petId === petId && r.direction === direction ? { ...r, dispute: { disputedBy: user.uid, reason } } : r
+        r.petId === petId && r.direction === direction ? { ...r, underDispute: true } : r
       )
     )
     setDisputeTarget(null)
@@ -66,7 +65,8 @@ function ReviewsList({ reviews }) {
   return (
     <div className="flex flex-col gap-4">
       {enriched.map((review, i) => {
-        const canDispute = user && user.uid === review.toUserId && !review.dispute
+        const isUnderDispute = review.underDispute === true
+        const canDispute = user && user.uid === review.toUserId && !isUnderDispute
 
         return (
           <div key={i} className="rounded-xl border border-line bg-white p-4">
@@ -89,7 +89,7 @@ function ReviewsList({ reviews }) {
               <Stars rating={review.rating} />
             </div>
 
-            {review.dispute ? (
+            {isUnderDispute ? (
               <p className="mt-3 text-[13.5px] italic text-ink-soft">
                 ⚠️ Comentário oculto — em análise por conta de um recurso.
               </p>

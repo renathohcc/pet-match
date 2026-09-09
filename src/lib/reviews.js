@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, where, writeBatch } from 'firebase/firestore'
 import { db } from './firebase'
 import { getPublicProfile } from './users'
 import { getPetById } from './pets'
@@ -56,8 +56,7 @@ export async function listAllReviews() {
  * Enriquece com nome/foto de quem avaliou e o pet mencionado.
  */
 export async function listHomeTestimonials(max = 3) {
-  const [reviews, disputes] = await Promise.all([listAllReviews(), listAllDisputes()])
-  const disputed = new Set(disputes.map((d) => d.id))
+  const reviews = await listAllReviews()
 
   const candidates = reviews
     .filter(
@@ -65,7 +64,7 @@ export async function listHomeTestimonials(max = 3) {
         r.direction === REVIEW_DIRECTIONS.adopter_to_donor &&
         r.rating >= 4 &&
         (r.comment || '').trim() &&
-        !disputed.has(r.id)
+        r.underDispute !== true
     )
     .slice(0, max)
 
@@ -99,7 +98,9 @@ export async function deleteReview(petId, direction) {
  * dados da avaliação junto pro admin não precisar de leitura extra.
  */
 export async function disputeReview({ petId, direction, disputedBy, reason, review }) {
-  await setDoc(doc(db, 'reviewDisputes', getReviewId(petId, direction)), {
+  const id = getReviewId(petId, direction)
+  const batch = writeBatch(db)
+  batch.set(doc(db, 'reviewDisputes', id), {
     petId,
     direction,
     disputedBy,
@@ -110,6 +111,10 @@ export async function disputeReview({ petId, direction, disputedBy, reason, revi
     comment: review.comment,
     createdAt: serverTimestamp(),
   })
+  // `underDispute` na review é o sinal público pra esconder o comentário —
+  // reviewDisputes em si é privado agora (ver firestore.rules).
+  batch.update(doc(db, 'reviews', id), { underDispute: true })
+  await batch.commit()
 }
 
 /** Retorna o recurso aberto pra essa avaliação, ou null se não tem nenhum. */
@@ -127,7 +132,11 @@ export async function listAllDisputes() {
 
 /** Recurso indevido: comentário volta a aparecer publicamente. */
 export async function rejectDispute(petId, direction) {
-  await deleteDoc(doc(db, 'reviewDisputes', getReviewId(petId, direction)))
+  const id = getReviewId(petId, direction)
+  const batch = writeBatch(db)
+  batch.delete(doc(db, 'reviewDisputes', id))
+  batch.update(doc(db, 'reviews', id), { underDispute: false })
+  await batch.commit()
 }
 
 /** Recurso procede: avaliação é removida de vez, e o recurso junto (nada mais a resolver). */
