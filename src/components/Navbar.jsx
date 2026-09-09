@@ -53,7 +53,7 @@ function Navbar() {
         <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-blue-deep text-[17px] text-cream">
           ♡
         </span>
-        PetMatch
+        Adota.THE
       </Link>
 
       <div className="hidden gap-7.5 text-[15px] font-medium text-ink-soft md:flex">

@@ -96,7 +96,7 @@ function drawText(ctx, pet, text, textX, photoBottom, width, height, margin, inc
 
   ctx.fillStyle = text.logo
   ctx.font = `700 ${width * 0.04}px 'Fraunces', serif`
-  ctx.fillText('♡ PetMatch', textX, height - margin * 0.9)
+  ctx.fillText('♡ Adota.THE', textX, height - margin * 0.9)
 }
 
 /**

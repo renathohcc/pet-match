@@ -44,7 +44,7 @@ function Denunciar() {
   return (
     <Container>
       <Helmet>
-        <title>Denunciar anúncio — PetMatch</title>
+        <title>Denunciar anúncio — Adota.THE</title>
       </Helmet>
 
       <div className="mx-auto max-w-[560px] py-12">
@@ -63,7 +63,7 @@ function Denunciar() {
           </div>
         ) : sent ? (
           <div className="rounded-2xl border border-line bg-white p-6 text-center">
-            <p className="mb-4 text-[15px] font-semibold text-blue-deep">Denúncia enviada. Obrigado por ajudar a manter o PetMatch seguro. 🙏</p>
+            <p className="mb-4 text-[15px] font-semibold text-blue-deep">Denúncia enviada. Obrigado por ajudar a manter o Adota.THE seguro. 🙏</p>
             <Link to="/buscar" className="text-blue-mid hover:underline">
               Voltar para a busca
             </Link>

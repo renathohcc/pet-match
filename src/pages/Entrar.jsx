@@ -39,13 +39,13 @@ function Entrar() {
   return (
     <Container>
       <Helmet>
-        <title>Entrar — PetMatch</title>
+        <title>Entrar — Adota.THE</title>
       </Helmet>
 
       <div className="mx-auto max-w-[480px] py-16">
         {!user ? (
           <div className="text-center">
-            <div className="mb-2.5 font-display text-2xl font-bold text-blue-deep">♡ PetMatch</div>
+            <div className="mb-2.5 font-display text-2xl font-bold text-blue-deep">♡ Adota.THE</div>
             <p className="mb-8 text-ink-soft">
               Entre com sua conta Google para cadastrar pets, favoritar, conversar com doadores e avaliar adoções.
             </p>
@@ -57,7 +57,7 @@ function Entrar() {
           <div>
             <h1 className="mb-2 font-display text-2xl text-blue-deep">Complete seu perfil</h1>
             <p className="mb-6 text-ink-soft">
-              Confirme como você quer aparecer para outras pessoas no PetMatch antes de continuar.
+              Confirme como você quer aparecer para outras pessoas no Adota.THE antes de continuar.
             </p>
             <ProfileForm
               initialName={profile.displayName}

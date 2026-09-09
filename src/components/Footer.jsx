@@ -7,7 +7,7 @@ function Footer() {
       <Container>
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
-            <div className="mb-2.5 font-display text-xl font-bold text-white">♡ PetMatch</div>
+            <div className="mb-2.5 font-display text-xl font-bold text-white">♡ Adota.THE</div>
             <p className="max-w-[260px] text-sm">
               Uma plataforma para conectar animais que precisam de um lar a pessoas prontas para adotar com
               responsabilidade.
@@ -38,7 +38,7 @@ function Footer() {
           </div>
         </div>
         <div className="mt-10 flex flex-wrap justify-between gap-2.5 border-t border-white/10 pt-5.5 text-[13px] text-[#9FB3C4]">
-          <span>© 2026 PetMatch. Plataforma gratuita, sem fins lucrativos.</span>
+          <span>© 2026 Adota.THE. Plataforma gratuita, sem fins lucrativos.</span>
           <span>Feito para conectar pessoas e animais.</span>
         </div>
       </Container>

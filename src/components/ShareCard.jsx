@@ -70,17 +70,17 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
   async function handleShare() {
     if (!blob) return
     setShareError(null)
-    const file = new File([blob], `${pet.name}-petmatch.png`, { type: 'image/png' })
+    const file = new File([blob], `${pet.name}-adota-the.png`, { type: 'image/png' })
     // O campo `url` da Web Share API é ignorado por vários apps (WhatsApp incluso)
     // quando `files` também é enviado — por isso o link vai dentro do texto, que
     // WhatsApp/Instagram linkificam automaticamente.
-    const text = `Conheça ${pet.name} no PetMatch, em ${pet.city}! ${getPetUrl(pet.id)}`
+    const text = `Conheça ${pet.name} no Adota.THE, em ${pet.city}! ${getPetUrl(pet.id)}`
 
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({
           files: [file],
-          title: `${pet.name} está esperando por um lar — PetMatch`,
+          title: `${pet.name} está esperando por um lar — Adota.THE`,
           text,
         })
       } catch (err) {
@@ -96,7 +96,7 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
     if (!previewUrl) return
     const link = document.createElement('a')
     link.href = previewUrl
-    link.download = `${pet.name}-petmatch.png`
+    link.download = `${pet.name}-adota-the.png`
     document.body.appendChild(link)
     link.click()
     link.remove()

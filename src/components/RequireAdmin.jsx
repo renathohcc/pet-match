@@ -21,7 +21,7 @@ function RequireAdmin({ children }) {
       <Container>
         <div className="mx-auto max-w-[420px] py-20 text-center">
           <h1 className="mb-3 font-display text-2xl text-blue-deep">Entre para acessar</h1>
-          <p className="mb-6 text-ink-soft">Essa área é restrita ao administrador do PetMatch. Entre com a conta correta para continuar.</p>
+          <p className="mb-6 text-ink-soft">Essa área é restrita ao administrador do Adota.THE. Entre com a conta correta para continuar.</p>
           <Button as={Link} to={`/entrar?redirectTo=${encodeURIComponent(location.pathname)}`} variant="primary">
             Entrar
           </Button>

@@ -4,12 +4,12 @@ import Container from '../components/Container'
 
 const FAQ = [
   {
-    q: 'O PetMatch cobra alguma taxa para adotar ou cadastrar um pet?',
-    a: 'Não. O PetMatch é uma plataforma gratuita e sem fins lucrativos. Desconfie de qualquer pessoa que peça pagamento, sinal ou taxa de reserva antes do encontro — isso não é adoção responsável e deve ser denunciado.',
+    q: 'O Adota.THE cobra alguma taxa para adotar ou cadastrar um pet?',
+    a: 'Não. O Adota.THE é uma plataforma gratuita e sem fins lucrativos. Desconfie de qualquer pessoa que peça pagamento, sinal ou taxa de reserva antes do encontro — isso não é adoção responsável e deve ser denunciado.',
   },
   {
     q: 'Como funciona o contato com quem está doando o pet?',
-    a: 'O PetMatch não intermedia a conversa: ao clicar em "Conversar no WhatsApp" você é direcionado direto para o número informado pelo responsável pelo anúncio. Combine tudo (visita, entrega, documentação do pet) diretamente com essa pessoa.',
+    a: 'O Adota.THE não intermedia a conversa: ao clicar em "Conversar no WhatsApp" você é direcionado direto para o número informado pelo responsável pelo anúncio. Combine tudo (visita, entrega, documentação do pet) diretamente com essa pessoa.',
   },
   {
     q: 'Preciso ter conta para navegar e ver os pets disponíveis?',
@@ -36,8 +36,8 @@ const FAQ = [
     ),
   },
   {
-    q: 'O PetMatch verifica os anúncios ou as pessoas que cadastram pets?',
-    a: 'Não há verificação de documentos ou visitas presenciais — o PetMatch é um espaço de conexão, não uma ONG de fiscalização. Por isso pedimos que toda combinação (encontro, entrega, adoção) seja feita com cautela, preferencialmente em local seguro e à luz do dia.',
+    q: 'O Adota.THE verifica os anúncios ou as pessoas que cadastram pets?',
+    a: 'Não há verificação de documentos ou visitas presenciais — o Adota.THE é um espaço de conexão, não uma ONG de fiscalização. Por isso pedimos que toda combinação (encontro, entrega, adoção) seja feita com cautela, preferencialmente em local seguro e à luz do dia.',
   },
 ]
 
@@ -45,12 +45,12 @@ function DuvidasFrequentes() {
   return (
     <Container>
       <Helmet>
-        <title>Dúvidas frequentes — PetMatch</title>
+        <title>Dúvidas frequentes — Adota.THE</title>
       </Helmet>
 
       <div className="mx-auto max-w-[720px] py-12">
         <h1 className="mb-2 font-display text-[32px] text-blue-deep">Dúvidas frequentes</h1>
-        <p className="mb-9 text-ink-soft">Tudo que você precisa saber para usar o PetMatch com segurança.</p>
+        <p className="mb-9 text-ink-soft">Tudo que você precisa saber para usar o Adota.THE com segurança.</p>
 
         <div className="flex flex-col gap-5">
           {FAQ.map((item, i) => (

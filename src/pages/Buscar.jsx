@@ -65,7 +65,7 @@ function Buscar() {
   return (
     <Container>
       <Helmet>
-        <title>Buscar pets para adoção — PetMatch</title>
+        <title>Buscar pets para adoção — Adota.THE</title>
         <meta name="description" content="Encontre cães e gatos para adoção responsável perto de você. Filtre por espécie, porte e sexo." />
       </Helmet>
 

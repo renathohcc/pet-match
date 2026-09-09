@@ -138,7 +138,7 @@ function Cadastrar() {
     return (
       <Container>
         <Helmet>
-          <title>Anúncio publicado! — PetMatch</title>
+          <title>Anúncio publicado! — Adota.THE</title>
         </Helmet>
         {shareStep === 'choice' ? (
           <PublishSuccess
@@ -162,7 +162,7 @@ function Cadastrar() {
   return (
     <Container>
       <Helmet>
-        <title>Cadastrar um pet para adoção — PetMatch</title>
+        <title>Cadastrar um pet para adoção — Adota.THE</title>
         <meta name="description" content="Cadastre gratuitamente um cão ou gato para adoção responsável. Sem prazo de expiração." />
       </Helmet>
 

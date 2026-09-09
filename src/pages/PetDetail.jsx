@@ -230,7 +230,7 @@ function PetDetail() {
     const digits = whatsapp?.replace(/\D/g, '')
     const number = digits ? (digits.length <= 11 ? `55${digits}` : digits) : '' // assume DDD sem código do país (BR)
     return `https://wa.me/${number}?text=${encodeURIComponent(
-      `Olá! Vi o anúncio do(a) ${pet.name} no PetMatch e tenho interesse em adotar.`
+      `Olá! Vi o anúncio do(a) ${pet.name} no Adota.THE e tenho interesse em adotar.`
     )}`
   }
 
@@ -347,7 +347,7 @@ function PetDetail() {
     setReviewTarget(null)
   }
 
-  const pageTitle = `${pet.name} — ${pet.species === 'cão' ? 'Cão' : 'Gato'} para adoção em ${pet.city} · PetMatch`
+  const pageTitle = `${pet.name} — ${pet.species === 'cão' ? 'Cão' : 'Gato'} para adoção em ${pet.city} · Adota.THE`
   const pageDescription = pet.story || `${pet.name} está esperando por um lar em ${pet.city}. Adoção responsável, sem intermediários.`
   const pageUrl = typeof window !== 'undefined' ? window.location.href : ''
 
@@ -556,7 +556,7 @@ function PetDetail() {
                 {isFavorite ? '♥ Salvo' : '♡ Salvar'}
               </Button>
               <div className="mt-4 border-t border-line pt-4 text-[12.5px] leading-relaxed text-ink-soft">
-                O contato só é liberado depois que {pet.contactName.split(' ')[0]} aceitar seu interesse. O PetMatch
+                O contato só é liberado depois que {pet.contactName.split(' ')[0]} aceitar seu interesse. O Adota.THE
                 não intermedia a adoção nem cobra taxas — desconfie de qualquer cobrança pedida antes do encontro.
                 <div className="mt-2">
                   <Link to={`/denunciar?petId=${pet.id}&petName=${encodeURIComponent(pet.name)}`} className="text-terracotta hover:underline">

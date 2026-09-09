@@ -1,7 +1,7 @@
 // Bairros de Teresina-PI (~123, agrupados por zona/SDU) via Wikipédia
 // (https://pt.wikipedia.org/wiki/Lista_de_bairros_de_Teresina) e de Timon-MA
 // via diretório de CEPs (https://cepbrasil.org/maranhao/timon/).
-// PetMatch é focado nessas duas cidades — ver plano, Fase 5.
+// Adota.THE é focado nessas duas cidades — ver plano, Fase 5.
 
 const TERESINA_NEIGHBORHOODS = [
   // Zona Centro

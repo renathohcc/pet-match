@@ -32,8 +32,8 @@ function StatCard({ label, value }) {
 // Rótulos amigáveis pra exibir as respostas da pesquisa pós-adoção (ver
 // SURVEY_QUESTIONS em src/components/ReviewDialog.jsx — mantidos em sincronia).
 const SURVEY_LABELS = {
-  facilitou: 'O PetMatch facilitou encontrar um adotante?',
-  voltariaUsar: 'Voltaria a usar o PetMatch?',
+  facilitou: 'O Adota.THE facilitou encontrar um adotante?',
+  voltariaUsar: 'Voltaria a usar o Adota.THE?',
   processoLivre: 'Sobre o processo',
   correspondeuAnuncio: 'O pet correspondia ao anúncio?',
   jaTinhaPet: 'Já tinha outro pet em casa?',
@@ -393,7 +393,7 @@ function Admin() {
   return (
     <Container>
       <Helmet>
-        <title>Painel Admin — PetMatch</title>
+        <title>Painel Admin — Adota.THE</title>
       </Helmet>
 
       <div className="pb-2 pt-9">

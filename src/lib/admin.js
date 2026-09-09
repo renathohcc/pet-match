@@ -1,4 +1,4 @@
-// Admin único do site (dono do PetMatch) — usado só pra liberar ações
+// Admin único do site (dono do Adota.THE) — usado só pra liberar ações
 // sensíveis no client (esconder/mostrar botões). A validação de verdade
 // é sempre no firestore.rules, isso aqui é só UX.
 export const ADMIN_UID = 'vJwhGPjI6eYVyl7XAfMevNKfJHR2'

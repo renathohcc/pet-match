@@ -9,8 +9,8 @@ import Chip from './Chip'
 // da review em reviews/{petId}_{direction}, campo `survey` (ver src/lib/reviews.js).
 const SURVEY_QUESTIONS = {
   donor_to_adopter: [
-    { key: 'facilitou', label: 'O PetMatch facilitou encontrar um adotante?', options: ['Sim, muito', 'Mais ou menos', 'Não, foi difícil'] },
-    { key: 'voltariaUsar', label: 'Você voltaria a usar o PetMatch pra um próximo pet?', options: ['Sim', 'Não', 'Talvez'] },
+    { key: 'facilitou', label: 'O Adota.THE facilitou encontrar um adotante?', options: ['Sim, muito', 'Mais ou menos', 'Não, foi difícil'] },
+    { key: 'voltariaUsar', label: 'Você voltaria a usar o Adota.THE pra um próximo pet?', options: ['Sim', 'Não', 'Talvez'] },
   ],
   adopter_to_donor: [
     { key: 'correspondeuAnuncio', label: 'O pet correspondia ao que foi anunciado (fotos, descrição, temperamento)?', options: ['Sim, totalmente', 'Em parte', 'Não muito'] },
@@ -89,7 +89,7 @@ function ReviewDialog({ open, targetName, direction, onSubmit, onCancel }) {
       {questions.length > 0 && (
         <div className="mb-4 flex flex-col gap-4 border-t border-line pt-4">
           <p className="text-[12px] font-semibold text-ink-soft">
-            Só mais algumas perguntas rápidas — nos ajuda a melhorar o PetMatch:
+            Só mais algumas perguntas rápidas — nos ajuda a melhorar o Adota.THE:
           </p>
           {questions.map((q) => (
             <div key={q.key}>

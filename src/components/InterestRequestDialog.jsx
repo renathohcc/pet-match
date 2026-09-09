@@ -23,7 +23,7 @@ function InterestRequestDialog({ open, petName, article, onSubmit, onCancel }) {
       <h3 className="mb-2.5 font-display text-lg text-blue-deep">Antes de manifestar interesse</h3>
       <p className="mb-4 text-[14.5px] text-ink-soft">
         Confirme que você tem condições de tempo, espaço e recursos para cuidar {article === 'do' ? 'do' : 'da'}{' '}
-        {petName}, que seu interesse não tem fins de venda, abandono ou maus-tratos, e que sabe que o PetMatch não
+        {petName}, que seu interesse não tem fins de venda, abandono ou maus-tratos, e que sabe que o Adota.THE não
         intermedia nem se responsabiliza pelo acordo — o contato é feito direto com o responsável pelo pet.
       </p>
 

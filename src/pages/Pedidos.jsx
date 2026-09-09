@@ -212,7 +212,7 @@ function Pedidos() {
   return (
     <Container>
       <Helmet>
-        <title>Meus pedidos — PetMatch</title>
+        <title>Meus pedidos — Adota.THE</title>
       </Helmet>
 
       <div className="pb-2 pt-9">

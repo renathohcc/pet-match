@@ -57,7 +57,7 @@ function PublicProfile() {
   return (
     <Container>
       <Helmet>
-        <title>{profile.displayName} — PetMatch</title>
+        <title>{profile.displayName} — Adota.THE</title>
       </Helmet>
 
       <div className="flex items-center gap-4 pb-2 pt-9">

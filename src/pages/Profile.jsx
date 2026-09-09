@@ -100,7 +100,7 @@ function Profile() {
   return (
     <Container>
       <Helmet>
-        <title>Meu perfil — PetMatch</title>
+        <title>Meu perfil — Adota.THE</title>
       </Helmet>
 
       {!editing ? (
