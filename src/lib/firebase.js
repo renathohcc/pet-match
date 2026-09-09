@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
@@ -15,9 +15,10 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig)
 
-// App Check (reCAPTCHA v3) — atesta que os requests vêm do nosso app no
-// navegador, cortando o grosso do abuso programático de Firestore/Cloudinary.
-// Só liga quando a site key está configurada (permite rodar local/CI sem ela).
+// App Check (reCAPTCHA Enterprise) — atesta que os requests vêm do nosso app
+// no navegador, cortando o grosso do abuso programático de Firestore/Cloudinary.
+// Só liga quando a chave está configurada (permite rodar local/CI sem ela).
+// VITE_RECAPTCHA_SITE_KEY = ID da chave do reCAPTCHA Enterprise (tipo "site web").
 // Em dev, defina VITE_APPCHECK_DEBUG_TOKEN com o token gerado no console.
 const appCheckSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY
 if (appCheckSiteKey) {
@@ -27,7 +28,7 @@ if (appCheckSiteKey) {
       window.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken
     }
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(appCheckSiteKey),
+      provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
       isTokenAutoRefreshEnabled: true,
     })
   } catch (err) {
