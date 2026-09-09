@@ -4,6 +4,7 @@ import Button from './Button'
 import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
 import { useNotifications } from '../context/useNotifications'
+import { deleteInterestAcceptedNotification, deleteInterestRequestNotification } from '../lib/notifications'
 import { isAdmin } from '../lib/admin'
 
 const navLinks = [
@@ -11,10 +12,20 @@ const navLinks = [
   { to: '/buscar', label: 'Encontrar um pet' },
 ]
 
-function reminderText(n) {
+function notificationText(n) {
+  if (n.type === 'interest_request') return `🐾 ${n.fromUserName} tem interesse em adotar ${n.petName}`
+  if (n.type === 'interest_accepted') return `✅ Seu interesse em ${n.petName} foi aceito — você já pode conversar!`
   return n.direction === 'donor_to_adopter'
-    ? `Avalie sua experiência com quem adotou ${n.petName}`
-    : `Avalie sua experiência com quem doou ${n.petName}`
+    ? `⭐ Avalie sua experiência com quem adotou ${n.petName}`
+    : `⭐ Avalie sua experiência com quem doou ${n.petName}`
+}
+
+// Lembrete de avaliação só some quando a avaliação é feita de verdade — os
+// dois tipos de interesse são só avisos, dispensáveis ao clicar.
+function dismissOnClick(n) {
+  if (n.type === 'interest_request') return () => deleteInterestRequestNotification(n.petId, n.fromUserId)
+  if (n.type === 'interest_accepted') return () => deleteInterestAcceptedNotification(n.petId, n.userId)
+  return null
 }
 
 function Navbar() {
@@ -86,7 +97,7 @@ function Navbar() {
             <button
               type="button"
               onClick={() => setNotifOpen((v) => !v)}
-              aria-label={notifications.length > 0 ? `${notifications.length} avaliação(ões) pendente(s)` : 'Notificações'}
+              aria-label={notifications.length > 0 ? `${notifications.length} notificação(ões) pendente(s)` : 'Notificações'}
               aria-expanded={notifOpen}
               className="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-white text-lg text-blue-deep"
             >
@@ -106,11 +117,14 @@ function Navbar() {
                   notifications.map((n) => (
                     <Link
                       key={n.id}
-                      to={`/pet/${n.petId}?avaliar=${n.direction}`}
-                      onClick={() => setNotifOpen(false)}
+                      to={n.type === 'review_reminder' ? `/pet/${n.petId}?avaliar=${n.direction}` : `/pet/${n.petId}`}
+                      onClick={() => {
+                        setNotifOpen(false)
+                        dismissOnClick(n)?.().catch(() => {})
+                      }}
                       className="block rounded-lg px-2.5 py-2.5 text-[13.5px] text-ink hover:bg-cream-2"
                     >
-                      ⭐ {reminderText(n)}
+                      {notificationText(n)}
                     </Link>
                   ))
                 )}

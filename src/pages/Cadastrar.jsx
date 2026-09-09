@@ -8,6 +8,7 @@ import Chip from '../components/Chip'
 import ShareCard from '../components/ShareCard'
 import { db } from '../lib/firebase'
 import { uploadPetPhoto } from '../lib/cloudinary'
+import { setPetContact } from '../lib/petContacts'
 import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
 import { CITIES, neighborhoodsForCity } from '../data/locations'
@@ -110,7 +111,6 @@ function Cadastrar() {
         story,
         city,
         neighborhood,
-        whatsapp,
         image,
         thumbs: photoUrls.slice(1),
         status: 'disponivel',
@@ -119,6 +119,9 @@ function Cadastrar() {
         contactType,
         createdAt: serverTimestamp(),
       })
+      // O whatsapp fica fora do doc público do pet — só liberado pra quem
+      // tem interesse aceito (ver src/lib/petContacts.js e firestore.rules).
+      await setPetContact(petId, { whatsapp, donorId: user.uid })
 
       setCreatedPet({ id: petId, name, city, neighborhood, image, contactName, whatsapp })
     } catch {

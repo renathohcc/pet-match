@@ -9,14 +9,30 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import Modal from '../components/Modal'
 import ShareCard from '../components/ShareCard'
 import AdopterPickerDialog from '../components/AdopterPickerDialog'
+import InterestRequestDialog from '../components/InterestRequestDialog'
+import InterestsPanel from '../components/InterestsPanel'
 import ReviewDialog from '../components/ReviewDialog'
 import RatingBadge from '../components/RatingBadge'
 import { deletePet, getPetById, PET_STATUSES, updatePetStatus } from '../lib/pets'
 import { useAuth } from '../context/useAuth'
+import { useProfile } from '../context/useProfile'
 import { useFavorites } from '../context/useFavorites'
-import { listInterestedUsers, registerInterest } from '../lib/interests'
+import {
+  getMyInterest,
+  listAcceptedInterestedUsers,
+  listInterests,
+  requestInterest,
+  updateInterestStatus,
+} from '../lib/interests'
+import { getPetContact } from '../lib/petContacts'
 import { getReview, getUserRatingSummary, submitReview } from '../lib/reviews'
-import { createReviewReminder, deleteReviewReminder } from '../lib/notifications'
+import {
+  createInterestAcceptedNotification,
+  createReviewReminder,
+  deleteInterestRequestNotification,
+  createInterestRequestNotification,
+  deleteReviewReminder,
+} from '../lib/notifications'
 import { getPublicProfile } from '../lib/users'
 import { isAdmin } from '../lib/admin'
 
@@ -25,16 +41,29 @@ function PetDetail() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
+  const { profile } = useProfile()
   const { favoriteIds, toggleFavorite } = useFavorites()
   const [pet, setPet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [confirmAction, setConfirmAction] = useState(null) // { type: 'status' | 'delete' | 'term', value? }
+  const [confirmAction, setConfirmAction] = useState(null) // { type: 'status' | 'delete', value? }
   const [shareOpen, setShareOpen] = useState(false)
+  const [shareContact, setShareContact] = useState(null) // whatsapp do próprio doador, carregado só ao abrir compartilhar
 
   const [adopterPicker, setAdopterPicker] = useState(null) // { interestedUsers: [] } | null
+
+  // Manifestação de interesse (visão de quem não é dono do pet)
+  const [myInterest, setMyInterest] = useState(null) // { status, message } | null
+  const [myInterestLoaded, setMyInterestLoaded] = useState(false)
+  const [interestRequestOpen, setInterestRequestOpen] = useState(false)
+  const [contactWhatsapp, setContactWhatsapp] = useState(null) // liberado só depois do interesse aceito
+
+  // Painel "Pedidos de interesse" (visão do dono do pet)
+  const [interests, setInterests] = useState([])
+  const [interestsLoading, setInterestsLoading] = useState(true)
+  const [updatingInterestUid, setUpdatingInterestUid] = useState(null)
   const [donorRating, setDonorRating] = useState({ average: 0, count: 0 })
   const [donorRatingLoading, setDonorRatingLoading] = useState(true)
   const [adopterName, setAdopterName] = useState('')
@@ -109,6 +138,52 @@ function PetDetail() {
     }
   }, [pet, user])
 
+  // Owner compartilhando o próprio pet: busca o contato só nesse momento
+  // (lazy) pra manter a opção "mostrar meu contato" do ShareCard funcionando
+  // mesmo com o whatsapp fora do doc público do pet.
+  useEffect(() => {
+    if (!shareOpen || !pet || user?.uid !== pet.donorId || shareContact) return
+    getPetContact(pet.id).then(setShareContact).catch(() => {})
+  }, [shareOpen, pet, user, shareContact])
+
+  // Manifestação de interesse do próprio usuário logado (visão de quem não é dono).
+  useEffect(() => {
+    if (!pet || !user || user.uid === pet.donorId) return undefined
+    let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading
+    setMyInterestLoaded(false)
+
+    getMyInterest(pet.id, user.uid).then((interest) => {
+      if (!cancelled) {
+        setMyInterest(interest)
+        setMyInterestLoaded(true)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [pet, user])
+
+  // Painel "Pedidos de interesse" (visão do dono do pet).
+  useEffect(() => {
+    if (!pet || !user || user.uid !== pet.donorId) return undefined
+    let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading
+    setInterestsLoading(true)
+
+    listInterests(pet.id).then((list) => {
+      if (!cancelled) {
+        setInterests(list)
+        setInterestsLoading(false)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [pet, user])
+
   // Deep link vindo do sino de notificação (/pet/:id?avaliar=donor_to_adopter):
   // abre o diálogo de avaliação direto, sem precisar achar o card manualmente.
   useEffect(() => {
@@ -156,15 +231,13 @@ function PetDetail() {
   // não a espécie — "gato" é palavra masculina mas pode ser uma gata fêmea.
   const article = pet.sex === 'Macho' ? 'do' : 'da'
 
-  const whatsappDigits = pet.whatsapp?.replace(/\D/g, '')
-  const whatsappNumber = whatsappDigits
-    ? whatsappDigits.length <= 11
-      ? `55${whatsappDigits}` // assume DDD sem código do país (BR)
-      : whatsappDigits
-    : ''
-  const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-    `Olá! Vi o anúncio do(a) ${pet.name} no PetMatch e tenho interesse em adotar.`
-  )}`
+  function buildWhatsappHref(whatsapp) {
+    const digits = whatsapp?.replace(/\D/g, '')
+    const number = digits ? (digits.length <= 11 ? `55${digits}` : digits) : '' // assume DDD sem código do país (BR)
+    return `https://wa.me/${number}?text=${encodeURIComponent(
+      `Olá! Vi o anúncio do(a) ${pet.name} no PetMatch e tenho interesse em adotar.`
+    )}`
+  }
 
   const isOwner = user?.uid === pet.donorId
   const isAdopter = Boolean(user) && user.uid === pet.adopterId
@@ -182,23 +255,68 @@ function PetDetail() {
     toggleFavorite(pet.id)
   }
 
-  function handleWhatsAppClick() {
+  async function handleContactButtonClick() {
     if (!user) {
       navigate(`/entrar?redirectTo=${encodeURIComponent(`/pet/${id}`)}`)
       return
     }
-    setConfirmAction({ type: 'term' })
+    if (!myInterest) {
+      setInterestRequestOpen(true)
+      return
+    }
+    if (myInterest.status === 'aceito') {
+      let whatsapp = contactWhatsapp
+      if (!whatsapp) {
+        const contact = await getPetContact(pet.id)
+        whatsapp = contact?.whatsapp
+        setContactWhatsapp(whatsapp)
+      }
+      window.open(buildWhatsappHref(whatsapp), '_blank', 'noopener')
+    }
+    // pendente/recusado: botão fica desabilitado/informativo, sem ação de clique.
   }
 
-  function handleAcceptTerm() {
-    registerInterest(pet.id, user.uid).catch(() => {})
-    window.open(whatsappHref, '_blank', 'noopener')
-    setConfirmAction(null)
+  async function handleInterestRequestSubmit(message) {
+    await requestInterest({ petId: pet.id, userId: user.uid, message })
+    createInterestRequestNotification({
+      petId: pet.id,
+      petName: pet.name,
+      donorId: pet.donorId,
+      fromUserId: user.uid,
+      fromUserName: profile?.displayName || user.displayName || 'Alguém',
+    }).catch(() => {})
+    setMyInterest({ status: 'pendente', message })
+    setInterestRequestOpen(false)
+  }
+
+  async function handleAcceptInterest(userId) {
+    setUpdatingInterestUid(userId)
+    try {
+      await updateInterestStatus(pet.id, userId, 'aceito')
+      setInterests((prev) => prev.map((i) => (i.userId === userId ? { ...i, status: 'aceito' } : i)))
+      await Promise.all([
+        deleteInterestRequestNotification(pet.id, userId),
+        createInterestAcceptedNotification({ petId: pet.id, petName: pet.name, userId }),
+      ]).catch(() => {})
+    } finally {
+      setUpdatingInterestUid(null)
+    }
+  }
+
+  async function handleDeclineInterest(userId) {
+    setUpdatingInterestUid(userId)
+    try {
+      await updateInterestStatus(pet.id, userId, 'recusado')
+      setInterests((prev) => prev.map((i) => (i.userId === userId ? { ...i, status: 'recusado' } : i)))
+      deleteInterestRequestNotification(pet.id, userId).catch(() => {})
+    } finally {
+      setUpdatingInterestUid(null)
+    }
   }
 
   async function handleStatusChipClick(value) {
     if (value === 'adotado') {
-      const interested = await listInterestedUsers(pet.id)
+      const interested = await listAcceptedInterestedUsers(pet.id)
       if (interested.length > 0) {
         setAdopterPicker({ interestedUsers: interested })
         return
@@ -382,6 +500,16 @@ function PetDetail() {
             </div>
           )}
 
+          {isOwner && pet.status !== 'adotado' && (
+            <InterestsPanel
+              interests={interests}
+              loading={interestsLoading}
+              onAccept={handleAcceptInterest}
+              onDecline={handleDeclineInterest}
+              updatingUid={updatingInterestUid}
+            />
+          )}
+
           {isOwner && (
             <div className="mb-4.5 rounded-2xl border border-line bg-white p-5.5">
               <h4 className="mb-3 text-[14.5px] font-bold text-blue-deep">Status do anúncio</h4>
@@ -431,15 +559,41 @@ function PetDetail() {
                   )}
                 </div>
               </div>
-              <Button variant="whatsapp" className="mb-2.5 w-full" onClick={handleWhatsAppClick}>
-                {user ? '💬 Conversar no WhatsApp' : '🔒 Entrar para ver o contato'}
-              </Button>
+              {pet.status === 'adotado' ? (
+                <p className="mb-2.5 rounded-lg bg-cream-2 px-3.5 py-2.5 text-center text-[13.5px] text-ink-soft">
+                  Esse pet já foi adotado.
+                </p>
+              ) : !user ? (
+                <Button variant="whatsapp" className="mb-2.5 w-full" onClick={handleContactButtonClick}>
+                  🔒 Entrar para ver o contato
+                </Button>
+              ) : !myInterestLoaded ? (
+                <Button variant="whatsapp" className="mb-2.5 w-full" disabled>
+                  Carregando...
+                </Button>
+              ) : !myInterest ? (
+                <Button variant="whatsapp" className="mb-2.5 w-full" onClick={handleContactButtonClick}>
+                  🐾 Tenho interesse nesse pet
+                </Button>
+              ) : myInterest.status === 'pendente' ? (
+                <Button variant="ghost" className="mb-2.5 w-full" disabled>
+                  ⏳ Interesse enviado — aguardando o doador
+                </Button>
+              ) : myInterest.status === 'aceito' ? (
+                <Button variant="whatsapp" className="mb-2.5 w-full" onClick={handleContactButtonClick}>
+                  💬 Conversar no WhatsApp
+                </Button>
+              ) : (
+                <p className="mb-2.5 rounded-lg bg-cream-2 px-3.5 py-2.5 text-center text-[13.5px] text-ink-soft">
+                  Esse doador já seguiu com outro processo pra esse pet.
+                </p>
+              )}
               <Button variant="ghost" className="mb-2.5 w-full" onClick={handleFavoriteClick}>
                 {isFavorite ? '♥ Salvo' : '♡ Salvar'}
               </Button>
               <div className="mt-4 border-t border-line pt-4 text-[12.5px] leading-relaxed text-ink-soft">
-                O contato é feito direto com {pet.contactName.split(' ')[0]}. O PetMatch não intermedia a adoção nem
-                cobra taxas — desconfie de qualquer cobrança pedida antes do encontro.
+                O contato só é liberado depois que {pet.contactName.split(' ')[0]} aceitar seu interesse. O PetMatch
+                não intermedia a adoção nem cobra taxas — desconfie de qualquer cobrança pedida antes do encontro.
                 <div className="mt-2">
                   <Link to={`/denunciar?petId=${pet.id}&petName=${encodeURIComponent(pet.name)}`} className="text-terracotta hover:underline">
                     🚩 Denunciar este anúncio
@@ -479,13 +633,12 @@ function PetDetail() {
         onCancel={() => setConfirmAction(null)}
       />
 
-      <ConfirmDialog
-        open={confirmAction?.type === 'term'}
-        title="Antes de conversar"
-        message={`Confirme que você tem condições de tempo, espaço e recursos para cuidar ${article === 'do' ? 'do' : 'da'} ${pet.name}, que a adoção não tem fins de venda, abandono ou maus-tratos, e que sabe que o PetMatch não intermedia nem se responsabiliza pelo acordo — o contato é feito direto com o responsável pelo pet.`}
-        confirmLabel="Aceito, continuar →"
-        onConfirm={handleAcceptTerm}
-        onCancel={() => setConfirmAction(null)}
+      <InterestRequestDialog
+        open={interestRequestOpen}
+        petName={pet.name}
+        article={article}
+        onSubmit={handleInterestRequestSubmit}
+        onCancel={() => setInterestRequestOpen(false)}
       />
 
       <AdopterPickerDialog
@@ -512,7 +665,7 @@ function PetDetail() {
         cardClassName="flex max-h-[85vh] w-full max-w-[460px] flex-col rounded-2xl bg-cream shadow-[0_20px_40px_rgba(22,50,79,.2)]"
       >
         <div className="overflow-y-auto overscroll-contain p-6">
-          <ShareCard pet={pet} />
+          <ShareCard pet={shareContact ? { ...pet, whatsapp: shareContact.whatsapp } : pet} />
         </div>
       </Modal>
     </Container>

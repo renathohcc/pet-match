@@ -11,6 +11,7 @@ import { getReviewId } from './reviews'
  */
 export async function createReviewReminder({ petId, petName, direction, userId }) {
   await setDoc(doc(db, 'notifications', getReviewId(petId, direction)), {
+    type: 'review_reminder',
     userId,
     petId,
     petName,
@@ -21,4 +22,38 @@ export async function createReviewReminder({ petId, petName, direction, userId }
 
 export async function deleteReviewReminder(petId, direction) {
   await deleteDoc(doc(db, 'notifications', getReviewId(petId, direction)))
+}
+
+/** Avisa o doador que alguém manifestou interesse no pet. */
+export async function createInterestRequestNotification({ petId, petName, donorId, fromUserId, fromUserName }) {
+  await setDoc(doc(db, 'notifications', `interest_${petId}_${fromUserId}`), {
+    type: 'interest_request',
+    userId: donorId,
+    petId,
+    petName,
+    fromUserId,
+    fromUserName,
+    createdAt: serverTimestamp(),
+  })
+}
+
+/** Some quando o doador aceita ou recusa o pedido (a "ação" resolve o pedido). */
+export async function deleteInterestRequestNotification(petId, fromUserId) {
+  await deleteDoc(doc(db, 'notifications', `interest_${petId}_${fromUserId}`))
+}
+
+/** Avisa quem teve o interesse aceito que já pode conversar. */
+export async function createInterestAcceptedNotification({ petId, petName, userId }) {
+  await setDoc(doc(db, 'notifications', `interest_accepted_${petId}_${userId}`), {
+    type: 'interest_accepted',
+    userId,
+    petId,
+    petName,
+    createdAt: serverTimestamp(),
+  })
+}
+
+/** Dispensa a notificação "interesse aceito" (ex: ao clicar nela). */
+export async function deleteInterestAcceptedNotification(petId, userId) {
+  await deleteDoc(doc(db, 'notifications', `interest_accepted_${petId}_${userId}`))
 }

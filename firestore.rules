@@ -18,6 +18,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == 'vJwhGPjI6eYVyl7XAfMevNKfJHR2';
     }
 
+    function petDonorId(petId) {
+      return get(/databases/$(database)/documents/pets/$(petId)).data.donorId;
+    }
+
     // Pesquisa pós-adoção embutida na review (campo `survey`) — perguntas
     // diferentes por direção, ver SURVEY_QUESTIONS em ReviewDialog.jsx.
     // Só garante que as chaves obrigatórias vieram preenchidas; o texto livre
@@ -68,12 +72,44 @@ service cloud.firestore {
       allow write: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // Registro de "cliquei em conversar no WhatsApp" — usado pelo doador pra
-    // escolher quem foi o adotante na hora de marcar o pet como adotado.
+    // Manifestação de interesse num pet — precisa do aceite do doador antes
+    // do contato (whatsapp) ser liberado (ver petContacts abaixo). Doador
+    // pode aceitar vários interessados ao mesmo tempo; a escolha de quem
+    // efetivamente adotou continua acontecendo depois, ao marcar "Adotado".
     match /interests/{interestId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false;
+      // Só o próprio interessado (seu pedido) ou o doador do pet (todos os
+      // pedidos do anúncio dele) podem ler — antes disso vazava pra
+      // qualquer usuário logado quem se interessou por qual pet.
+      allow read: if isSignedIn()
+        && (resource.data.userId == request.auth.uid || petDonorId(resource.data.petId) == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pendente';
+
+      // Só o doador aceita/recusa, e só pode mexer no campo status (não dá
+      // pra reescrever petId/userId/message por baixo do pedido original).
+      allow update: if isSignedIn()
+        && petDonorId(resource.data.petId) == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['pendente', 'aceito', 'recusado'];
+
+      allow delete: if false;
+    }
+
+    // Contato (whatsapp) do doador de um pet — fora do doc público de
+    // `pets` de propósito, pra não vazar o número pra quem não teve o
+    // interesse aceito (o doc do pet é público, esse aqui não).
+    match /petContacts/{petId} {
+      allow read: if isSignedIn()
+        && (resource.data.donorId == request.auth.uid
+          || get(/databases/$(database)/documents/interests/$(petId + '_' + request.auth.uid)).data.status == 'aceito');
+
+      allow create, update: if isSignedIn()
+        && request.resource.data.donorId == request.auth.uid
+        && petDonorId(petId) == request.auth.uid;
+
+      allow delete: if false;
     }
 
     // Avaliação mútua doador<->adotante, só depois do pet marcado como
@@ -133,23 +169,37 @@ service cloud.firestore {
       allow update: if false;
     }
 
-    // "Avaliação pendente" — não some até a review correspondente ser criada
-    // (aí sim é apagada, ver deleteReviewReminder). Só o doador, no momento
-    // de marcar o pet como adotado, pode criar o par (uma pra si, uma pro
-    // adotante); só o próprio destinatário lê/apaga a sua.
+    // Notificações no sino da Navbar — 3 tipos hoje, todas endereçadas a um
+    // `userId` só (o destinatário lê/apaga a própria, nunca a de outra
+    // pessoa). `review_reminder` não some até a review ser criada de
+    // verdade (ver deleteReviewReminder); as de interesse são dispensáveis
+    // ao clicar (não travam esperando outra ação).
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
 
-      allow create: if isSignedIn()
-        && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.donorId == request.auth.uid
-        && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.status == 'adotado'
-        && (
-          (request.resource.data.direction == 'donor_to_adopter'
-            && request.resource.data.userId == request.auth.uid)
-          ||
-          (request.resource.data.direction == 'adopter_to_donor'
-            && request.resource.data.userId == get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.adopterId)
-        );
+      allow create: if isSignedIn() && (
+        // Lembrete de avaliação pendente: só o doador, ao marcar o pet como
+        // adotado com um adotante escolhido, cria o par (pra si e pro
+        // adotante).
+        (request.resource.data.type == 'review_reminder'
+          && petDonorId(request.resource.data.petId) == request.auth.uid
+          && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.status == 'adotado'
+          && (
+            (request.resource.data.direction == 'donor_to_adopter' && request.resource.data.userId == request.auth.uid)
+            ||
+            (request.resource.data.direction == 'adopter_to_donor'
+              && request.resource.data.userId == get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.adopterId)
+          ))
+        ||
+        // Pedido de interesse: o próprio interessado avisa o doador do pet.
+        (request.resource.data.type == 'interest_request'
+          && request.resource.data.fromUserId == request.auth.uid
+          && request.resource.data.userId == petDonorId(request.resource.data.petId))
+        ||
+        // Interesse aceito: só o doador do pet avisa quem foi aceito.
+        (request.resource.data.type == 'interest_accepted'
+          && petDonorId(request.resource.data.petId) == request.auth.uid)
+      );
 
       allow update: if false;
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
