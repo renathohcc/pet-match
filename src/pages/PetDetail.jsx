@@ -153,12 +153,18 @@ function PetDetail() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading
     setMyInterestLoaded(false)
 
-    getMyInterest(pet.id, user.uid).then((interest) => {
-      if (!cancelled) {
-        setMyInterest(interest)
-        setMyInterestLoaded(true)
-      }
-    })
+    getMyInterest(pet.id, user.uid)
+      .then((interest) => {
+        if (!cancelled) setMyInterest(interest)
+      })
+      .catch(() => {
+        // Sem permissão/erro de rede: trata como "nunca manifestou interesse"
+        // em vez de travar em "Carregando..." pra sempre.
+        if (!cancelled) setMyInterest(null)
+      })
+      .finally(() => {
+        if (!cancelled) setMyInterestLoaded(true)
+      })
 
     return () => {
       cancelled = true
@@ -172,12 +178,16 @@ function PetDetail() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading
     setInterestsLoading(true)
 
-    listInterests(pet.id).then((list) => {
-      if (!cancelled) {
-        setInterests(list)
-        setInterestsLoading(false)
-      }
-    })
+    listInterests(pet.id)
+      .then((list) => {
+        if (!cancelled) setInterests(list)
+      })
+      .catch(() => {
+        if (!cancelled) setInterests([])
+      })
+      .finally(() => {
+        if (!cancelled) setInterestsLoading(false)
+      })
 
     return () => {
       cancelled = true
@@ -267,9 +277,14 @@ function PetDetail() {
     if (myInterest.status === 'aceito') {
       let whatsapp = contactWhatsapp
       if (!whatsapp) {
-        const contact = await getPetContact(pet.id)
-        whatsapp = contact?.whatsapp
-        setContactWhatsapp(whatsapp)
+        try {
+          const contact = await getPetContact(pet.id)
+          whatsapp = contact?.whatsapp
+          setContactWhatsapp(whatsapp)
+        } catch {
+          alert('Não foi possível carregar o contato agora. Tente novamente em instantes.')
+          return
+        }
       }
       window.open(buildWhatsappHref(whatsapp), '_blank', 'noopener')
     }

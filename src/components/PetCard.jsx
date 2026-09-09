@@ -19,9 +19,9 @@ export function FeaturePetCard({ pet, className = '' }) {
     >
       <img src={pet.image} alt={pet.name} className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/0 from-45% to-[rgba(10,20,30,.78)]" />
-      {pet.tag && (
+      {pet.size && (
         <div className="absolute top-3 right-3 rounded-full bg-white/92 px-2.5 py-1 text-[11px] font-bold text-blue-deep">
-          {pet.tag}
+          {pet.size}
         </div>
       )}
       <div className="absolute bottom-3 left-3.5 right-3.5">
@@ -53,9 +53,9 @@ export function GridPetCard({ pet, statusLabel }) {
     <Link to={`/pet/${pet.id}`} className="block overflow-hidden rounded-[14px] border border-line bg-white">
       <div className="relative aspect-[4/3.1] bg-neutral-300">
         <img src={pet.image} alt={pet.name} className="h-full w-full object-cover" />
-        {pet.tag && (
+        {pet.size && (
           <span className="absolute top-2.5 left-2.5 rounded-full bg-white/94 px-2.5 py-1 text-[11px] font-bold text-blue-deep">
-            {pet.tag}
+            {pet.size}
           </span>
         )}
         {!isOwner && (
