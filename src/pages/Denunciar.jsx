@@ -24,10 +24,18 @@ function Denunciar() {
     setSending(true)
     setError('')
     try {
-      await submitReport({ petId, petName, reportedBy: user.uid, reason, details })
+      const res = await submitReport({ petId, petName, reportedBy: user.uid, reason, details })
+      if (res.alreadyReported) {
+        setError('Você já denunciou este anúncio — nossa equipe vai analisar.')
+        return
+      }
       setSent(true)
-    } catch {
-      setError('Não foi possível enviar a denúncia agora. Tente novamente em instantes.')
+    } catch (err) {
+      setError(
+        err?.code === 'permission-denied'
+          ? 'Você enviou denúncias rápido demais. Espere alguns segundos e tente de novo.'
+          : 'Não foi possível enviar a denúncia agora. Tente novamente em instantes.'
+      )
     } finally {
       setSending(false)
     }

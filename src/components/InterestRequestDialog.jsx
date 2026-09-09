@@ -12,8 +12,12 @@ function InterestRequestDialog({ open, petName, article, onSubmit, onCancel }) {
     setError(null)
     try {
       await onSubmit(message.trim())
-    } catch {
-      setError('Não foi possível enviar seu interesse agora. Tente novamente.')
+    } catch (err) {
+      setError(
+        err?.code === 'permission-denied'
+          ? 'Você fez isso rápido demais. Espere alguns segundos e tente de novo.'
+          : 'Não foi possível enviar seu interesse agora. Tente novamente.'
+      )
       setSubmitting(false)
     }
   }

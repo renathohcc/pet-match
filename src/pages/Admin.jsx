@@ -8,7 +8,7 @@ import Stars from '../components/Stars'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { getSiteStats } from '../lib/adminStats'
 import { listAllUsers, getPublicProfile, TUTOR_TYPES } from '../lib/users'
-import { listMyPets } from '../lib/pets'
+import { getPetById, listMyPets, REPORT_HIDE_THRESHOLD, restorePetVisibility } from '../lib/pets'
 import { deleteReview, getUserRatingSummary, listAllDisputes, listAllReviews, rejectDispute, upholdDispute } from '../lib/reviews'
 import { isOpenReport, listAllReports, resolveReport, REPORT_REASONS } from '../lib/reports'
 import { useAuth } from '../context/useAuth'
@@ -325,8 +325,11 @@ function ReportsTab() {
       const open = list.filter(isOpenReport)
       const enriched = await Promise.all(
         open.map(async (r) => {
-          const reporter = await getPublicProfile(r.reportedBy)
-          return { ...r, reporterName: reporter.displayName }
+          const [reporter, pet] = await Promise.all([
+            getPublicProfile(r.reportedBy),
+            r.petId ? getPetById(r.petId) : Promise.resolve(null),
+          ])
+          return { ...r, reporterName: reporter.displayName, petReportCount: pet?.reportCount || 0 }
         })
       )
       setReports(enriched)
@@ -367,10 +370,28 @@ function ReportsTab() {
             </div>
           </div>
 
-          <div className="mt-2 text-[12px] font-semibold text-terracotta">{REPORT_REASONS[r.reason] ?? r.reason}</div>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] font-semibold text-terracotta">
+            {REPORT_REASONS[r.reason] ?? r.reason}
+            {r.petId && (
+              <span className={r.petReportCount >= REPORT_HIDE_THRESHOLD ? 'rounded-full bg-terracotta px-2 py-0.5 text-white' : 'text-ink-soft'}>
+                {r.petReportCount} denúncia(s){r.petReportCount >= REPORT_HIDE_THRESHOLD ? ' · OCULTO DA BUSCA' : ''}
+              </span>
+            )}
+          </div>
           {r.details && <p className="mt-1 text-[13.5px] text-ink-soft">{r.details}</p>}
 
-          <div className="mt-3 flex justify-end gap-2">
+          <div className="mt-3 flex flex-wrap justify-end gap-2">
+            {r.petId && r.petReportCount >= REPORT_HIDE_THRESHOLD && (
+              <Button
+                variant="ghost"
+                onClick={async () => {
+                  await restorePetVisibility(r.petId)
+                  setReports((prev) => prev.map((x) => (x.petId === r.petId ? { ...x, petReportCount: 0 } : x)))
+                }}
+              >
+                Restaurar anúncio
+              </Button>
+            )}
             <Button variant="ghost" onClick={() => setConfirmTarget({ ...r, outcome: 'descartada' })}>
               Descartar
             </Button>

@@ -1,12 +1,35 @@
-import { collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { db } from './firebase'
+import { stampRateLimit } from './rateLimit'
 
 export const PET_STATUSES = {
   disponivel: 'Disponível',
   adotado: 'Adotado',
 }
 
+// Pós-moderação: a partir de N denúncias distintas, o anúncio some da busca
+// e vai pra fila do admin (o link direto continua abrindo). Ver reportCount
+// em src/lib/reports.js e a regra de update de `pets` no firestore.rules.
+export const REPORT_HIDE_THRESHOLD = 3
+
 const petsRef = collection(db, 'pets')
+
+/**
+ * Cria o anúncio + carimba o rate limit no mesmo batch (a regra de create
+ * exige isso — ver firestore.rules). `createdAt` é preenchido aqui pra bater
+ * com `request.time`.
+ */
+export async function createPet(petId, data, uid) {
+  const batch = writeBatch(db)
+  stampRateLimit(batch, uid, 'petAt')
+  batch.set(doc(db, 'pets', petId), { ...data, createdAt: serverTimestamp() })
+  await batch.commit()
+}
+
+/** Admin restaura um anúncio revisado (zera o contador de denúncias). */
+export async function restorePetVisibility(petId) {
+  await updateDoc(doc(db, 'pets', petId), { reportCount: 0 })
+}
 
 /**
  * Busca pets disponíveis, com filtros opcionais (todos client-side por enquanto
@@ -15,7 +38,10 @@ const petsRef = collection(db, 'pets')
 export async function listAvailablePets(filters = {}) {
   const q = query(petsRef, where('status', '==', 'disponivel'))
   const snapshot = await getDocs(q)
-  let pets = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+  let pets = snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    // Pós-moderação: esconde da busca quem acumulou denúncias demais.
+    .filter((p) => (p.reportCount || 0) < REPORT_HIDE_THRESHOLD)
 
   if (filters.species) {
     pets = pets.filter((p) => p.species === filters.species)

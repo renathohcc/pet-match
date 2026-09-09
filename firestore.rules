@@ -32,6 +32,14 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/pets/$(petId)).data.donorId;
     }
 
+    // Rate limiting sem backend: a criação de pet/denúncia/interesse só passa
+    // se, NO MESMO batch, o cliente tiver carimbado rateLimits/{uid} com a
+    // hora atual — e a regra de rateLimits abaixo exige um intervalo mínimo
+    // desde o último carimbo do mesmo tipo. (getAfter = estado pós-commit.)
+    function rlAfter() {
+      return getAfter(/databases/$(database)/documents/rateLimits/$(request.auth.uid)).data;
+    }
+
     // Pesquisa pós-adoção embutida na review (campo `survey`) — perguntas
     // diferentes por direção, ver SURVEY_QUESTIONS em ReviewDialog.jsx.
     // Só garante que as chaves obrigatórias vieram preenchidas; o texto livre
@@ -94,9 +102,12 @@ service cloud.firestore {
         && hasValidPetShape(request.resource.data)
         && request.resource.data.donorId == request.auth.uid
         // createdAt sempre = agora (não dá pra pré/pós-datar pra manipular
-        // ordenação); adopterId nunca vem na criação (só via confirmação).
+        // ordenação); adopterId nunca vem na criação (só via confirmação);
+        // reportCount, se vier, começa em 0.
         && request.resource.data.createdAt == request.time
-        && !request.resource.data.keys().hasAny(['adopterId']);
+        && !request.resource.data.keys().hasAny(['adopterId'])
+        && (!request.resource.data.keys().hasAny(['reportCount']) || request.resource.data.reportCount == 0)
+        && rlAfter().petAt == request.time;
 
       allow update: if (isOwner(resource.data.donorId)
           && hasValidPetShape(request.resource.data)
@@ -110,13 +121,52 @@ service cloud.firestore {
           && request.resource.data.status == 'adotado'
           && request.resource.data.adopterId == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adopterId'])
-          && get(/databases/$(database)/documents/interests/$(petId + '_' + request.auth.uid)).data.status == 'confirmado');
+          && get(/databases/$(database)/documents/interests/$(petId + '_' + request.auth.uid)).data.status == 'confirmado')
+        // Contador de denúncias distintas: qualquer usuário logado pode
+        // incrementar em 1, e SÓ se houver (no mesmo batch) a denúncia dele
+        // pra esse pet — id determinístico `${petId}__${uid}` garante 1 por
+        // pessoa. A busca esconde pets com reportCount alto (pós-moderação).
+        || (isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reportCount'])
+          && request.resource.data.reportCount == resource.data.get('reportCount', 0) + 1
+          && existsAfter(/databases/$(database)/documents/reports/$(petId + '__' + request.auth.uid)))
+        // Admin zera o contador ao restaurar um anúncio revisado.
+        || (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reportCount'])
+          && request.resource.data.reportCount == 0);
 
       // Pet adotado não pode mais ser excluído pelo próprio doador — evita
       // apagar o histórico junto de avaliações que já existem sobre a
       // adoção. Só o admin do site pode remover nesse caso (ex: pedido de
       // exclusão de dados, spam, etc).
       allow delete: if isAdmin() || (isOwner(resource.data.donorId) && resource.data.status != 'adotado');
+    }
+
+    // Carimbos de "última ação" por usuário — base do rate limiting (ver
+    // rlAfter() e as regras de create de pets/reports/interests). O cliente
+    // só consegue gravar a hora ATUAL, e nunca antes do intervalo mínimo
+    // desde o último carimbo do mesmo tipo.
+    match /rateLimits/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if false;
+
+      allow create: if isSignedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['petAt', 'reportAt', 'interestAt']);
+
+      allow update: if isSignedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['petAt', 'reportAt', 'interestAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().size() == 1
+        && (
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['petAt'])
+            && request.resource.data.petAt == request.time
+            && (!('petAt' in resource.data) || request.time > resource.data.petAt + duration.value(45, 's')))
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reportAt'])
+            && request.resource.data.reportAt == request.time
+            && (!('reportAt' in resource.data) || request.time > resource.data.reportAt + duration.value(20, 's')))
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['interestAt'])
+            && request.resource.data.interestAt == request.time
+            && (!('interestAt' in resource.data) || request.time > resource.data.interestAt + duration.value(12, 's')))
+        );
     }
 
     match /users/{userId} {
@@ -169,7 +219,8 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'pendente'
-        && request.resource.data.donorId == petDonorId(request.resource.data.petId);
+        && request.resource.data.donorId == petDonorId(request.resource.data.petId)
+        && rlAfter().interestAt == request.time;
 
       // Só mexe no campo status — nunca petId/userId/donorId/message por
       // baixo do pedido original. Duas linhas de transição possíveis:
@@ -280,7 +331,8 @@ service cloud.firestore {
         && request.resource.data.reportedBy == request.auth.uid
         && request.resource.data.reason in ['fraude', 'animal_doente', 'anuncio_falso', 'conteudo_inadequado', 'outro']
         && request.resource.data.details is string && request.resource.data.details.size() <= 1000
-        && request.resource.data.status == 'aberta';
+        && request.resource.data.status == 'aberta'
+        && rlAfter().reportAt == request.time;
       // Resolução = mudança de status (mantém histórico de moderação), nunca
       // apagar. Só o admin, e só esses campos.
       allow update: if isAdmin()

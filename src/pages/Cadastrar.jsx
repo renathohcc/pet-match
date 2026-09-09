@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import Chip from '../components/Chip'
 import ShareCard from '../components/ShareCard'
 import PublishSuccess from '../components/PublishSuccess'
-import { db } from '../lib/firebase'
+import { createPet } from '../lib/pets'
 import { uploadPetPhoto } from '../lib/cloudinary'
 import { setPetContact } from '../lib/petContacts'
+import { isRateLimitError, RATE_LIMIT_MESSAGE } from '../lib/rateLimit'
 import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
 import { CITIES, neighborhoodsForCity } from '../data/locations'
@@ -120,33 +120,40 @@ function Cadastrar() {
       const contactType = TUTOR_TYPES[profile?.tutorType] ?? TUTOR_TYPES.independente
       const petId = await generateUniquePetSlug(name)
 
-      await setDoc(doc(db, 'pets', petId), {
-        name,
-        species,
-        age,
-        sex,
-        size,
-        breed: breed || 'SRD',
-        health,
-        temperament,
-        story,
-        city,
-        neighborhood,
-        image,
-        thumbs: photoUrls.slice(1),
-        status: 'disponivel',
-        donorId: user.uid,
-        contactName,
-        contactType,
-        createdAt: serverTimestamp(),
-      })
+      await createPet(
+        petId,
+        {
+          name,
+          species,
+          age,
+          sex,
+          size,
+          breed: breed || 'SRD',
+          health,
+          temperament,
+          story,
+          city,
+          neighborhood,
+          image,
+          thumbs: photoUrls.slice(1),
+          status: 'disponivel',
+          donorId: user.uid,
+          contactName,
+          contactType,
+        },
+        user.uid
+      )
       // O whatsapp fica fora do doc público do pet — só liberado pra quem
       // tem interesse aceito (ver src/lib/petContacts.js e firestore.rules).
       await setPetContact(petId, { whatsapp, donorId: user.uid })
 
       setCreatedPet({ id: petId, name, city, neighborhood, image, contactName, whatsapp })
-    } catch {
-      setSubmitError('Não foi possível publicar o anúncio agora. Verifique os campos e tente novamente.')
+    } catch (err) {
+      setSubmitError(
+        isRateLimitError(err)
+          ? RATE_LIMIT_MESSAGE
+          : 'Não foi possível publicar o anúncio agora. Verifique os campos e tente novamente.'
+      )
       setSubmitting(false)
     }
   }

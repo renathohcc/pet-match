@@ -1,13 +1,20 @@
-import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { db } from './firebase'
+import { stampRateLimit } from './rateLimit'
 
 function interestId(petId, userId) {
   return `${petId}_${userId}`
 }
 
-/** Manifesta interesse num pet — fica "pendente" até o doador aceitar ou recusar. */
+/**
+ * Manifesta interesse num pet — fica "pendente" até o doador aceitar ou
+ * recusar. Carimba o rate limit no mesmo batch (a regra de create exige —
+ * ver firestore.rules).
+ */
 export async function requestInterest({ petId, petName, donorId, userId, message }) {
-  await setDoc(doc(db, 'interests', interestId(petId, userId)), {
+  const batch = writeBatch(db)
+  stampRateLimit(batch, userId, 'interestAt')
+  batch.set(doc(db, 'interests', interestId(petId, userId)), {
     petId,
     petName,
     donorId,
@@ -16,6 +23,7 @@ export async function requestInterest({ petId, petName, donorId, userId, message
     message: message || '',
     createdAt: serverTimestamp(),
   })
+  await batch.commit()
 }
 
 /** O próprio interesse do usuário logado nesse pet (ou null, se nunca manifestou). */

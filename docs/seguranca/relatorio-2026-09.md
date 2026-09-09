@@ -4,7 +4,7 @@
 **Escopo:** segurança da plataforma, proteção dos dados dos usuários e sistemas anti-fraude.
 **Base de código analisada:** frontend React + Vite, `firestore.rules`, `.github/workflows/deploy.yml`, `scripts/`, integração Cloudinary.
 
-> Documento de diagnóstico + roadmap. **Progresso:** Fase S1 ✅ concluída (2026-09-09) · Fase S2 ✅ concluída (2026-09-09) · S3–S4 pendentes.
+> Documento de diagnóstico + roadmap. **Progresso:** S1 ✅ · S2 ✅ · S3 ✅ código (2026-09-09) — falta ação de console (ver checklist abaixo) · S4 pendente.
 
 ---
 
@@ -132,11 +132,17 @@ Perder a conta Google `vJwhGPjI6eYVyl7XAfMevNKfJHR2` (perda de acesso, suspensã
 - **M2** ✅ — `isValidBrPhone()` valida o WhatsApp no `Cadastrar.jsx`; regras de `petContacts` exigem string 8–25 e só as chaves `whatsapp`/`donorId`.
 - **A5** ✅ — `reports` não é mais apagado ao resolver: ganha `status` (`aberta`/`resolvida`/`descartada`) + `resolvedBy` + `resolvedAt`. Criação valida `reason` (lista fechada), `details` ≤ 1000 e `status == 'aberta'`. Painel admin passa a ter "Resolvida" e "Descartar".
 
-### Fase S3 — Anti-abuso e anti-fraude
-- **A1 / A2 / M1** — Habilitar **Firebase App Check** (reCAPTCHA v3 no web) — corta a maior parte do abuso programático do Firestore. Auditar e endurecer o preset do Cloudinary no painel: tipos permitidos, tamanho máximo, remoção de metadados (resolve **M1**), moderação (`aws_rek` ou fila manual), pasta fixa no preset (ignorar o `folder` do cliente).
-- **A2** — Rate limiting leve via documento `rateLimits/{uid}` checado nas regras (contador + janela de tempo) para criação de `pets` / `reports` / `interests`; ou mover a criação de pet/denúncia para uma Cloud Function (exige plano Blaze — decisão do usuário).
-- **M3** — Detecção simples de duplicata: bloquear novo pet do mesmo `donorId` com mesmo `name` + `city` nas últimas 24h.
-- **Fila de moderação** — novos pets entram como `status: 'pendente_revisao'` e só aparecem na busca após aprovação (ou revisão pós-publicação com auto-ocultação após N denúncias).
+### Fase S3 — Anti-abuso e anti-fraude ✅ (código)
+- **A2 (rate limiting)** ✅ — `rateLimits/{uid}` carimba a hora de cada ação; criar `pets`/`reports`/`interests` só passa com o carimbo no mesmo batch (`getAfter`) e as regras impõem intervalo mínimo (pet 45s, denúncia 20s, interesse 12s). `src/lib/rateLimit.js` + `createPet()`/`submitReport()`/`requestInterest()` em `writeBatch`.
+- **A2 (App Check)** ✅ código — `initializeAppCheck` com reCAPTCHA v3 em `src/lib/firebase.js`, ativo só quando `VITE_RECAPTCHA_SITE_KEY` existe. **Falta console**: registrar o app + criar a site key + secret no GitHub + ativar enforcement.
+- **Pós-moderação** ✅ — denúncia com `petId` tem id determinístico (`${petId}__${uid}`, 1 por pessoa) e incrementa `pets.reportCount`; a busca esconde `reportCount >= 3` (link direto ainda abre). Painel admin mostra o contador e tem "Restaurar anúncio".
+- **A1 / M1 (Cloudinary)** ⏳ — só ação de console; o código não muda.
+- **M3 (dedup de repost)** — não feito nesta fase (optou-se por pós-moderação em vez do bloqueio por `donorId`+`name`+`city`). Reavaliar se aparecer spam de repost.
+
+#### Checklist de console para fechar a S3
+1. **App Check**: Firebase console → App Check → registrar o app web → provedor **reCAPTCHA v3**. Gerar a site key (domínios: o do GitHub Pages + `localhost`), guardar como secret `VITE_RECAPTCHA_SITE_KEY` no GitHub. Dev local: "Gerenciar tokens de depuração" → `.env.local` como `VITE_APPCHECK_DEBUG_TOKEN`.
+2. **Enforcement**: após um deploy com a key, App Check → APIs → **Cloud Firestore → Aplicar** (só depois de ver os requests legítimos como "verificados" no painel).
+3. **Cloudinary** (Settings → Upload → preset `petmatch_pets`): manter **Unsigned**; **Allowed formats** `jpg,png,webp`; **Max file size** (~10 MB) e dimensão máxima; ligar **Strip metadata/EXIF** (resolve M1); fixar a **pasta** no preset; opcional: moderação + limite de origem.
 
 ### Fase S4 — Conformidade e endurecimento de plataforma
 - **B4** — Página de Política de Privacidade + Termos de Uso (LGPD); consentimento explícito no onboarding; mecanismo de exclusão de conta/dados.

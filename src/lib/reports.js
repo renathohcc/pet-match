@@ -1,5 +1,6 @@
-import { addDoc, collection, doc, getDocs, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, increment, orderBy, query, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore'
 import { db } from './firebase'
+import { stampRateLimit } from './rateLimit'
 
 export const REPORT_REASONS = {
   fraude: 'Suspeita de fraude/golpe',
@@ -11,17 +12,38 @@ export const REPORT_REASONS = {
 
 const reportsRef = collection(db, 'reports')
 
-/** Envia uma denúncia sobre um anúncio (exige login — ver firestore.rules). */
+/**
+ * Denúncia sobre um anúncio. Quando há `petId`, o id do doc é determinístico
+ * (`${petId}__${uid}`) — uma denúncia por pessoa por anúncio — e o mesmo batch
+ * incrementa `pets/{petId}.reportCount` (pós-moderação: some da busca ao
+ * acumular denúncias). Carimba o rate limit junto (a regra exige — ver
+ * firestore.rules). Retorna `{ alreadyReported: true }` se a pessoa já
+ * denunciou esse anúncio.
+ */
 export async function submitReport({ petId, petName, reportedBy, reason, details }) {
-  await addDoc(reportsRef, {
-    petId: petId || null,
+  const batch = writeBatch(db)
+  stampRateLimit(batch, reportedBy, 'reportAt')
+
+  const base = {
     petName: petName || '',
     reportedBy,
     reason,
     details: details || '',
     status: 'aberta',
     createdAt: serverTimestamp(),
-  })
+  }
+
+  if (petId) {
+    const reportRef = doc(db, 'reports', `${petId}__${reportedBy}`)
+    if ((await getDoc(reportRef)).exists()) return { alreadyReported: true }
+    batch.set(reportRef, { ...base, petId })
+    batch.update(doc(db, 'pets', petId), { reportCount: increment(1) })
+  } else {
+    batch.set(doc(reportsRef), { ...base, petId: null })
+  }
+
+  await batch.commit()
+  return {}
 }
 
 /** Todas as denúncias, mais recentes primeiro — usado no painel admin. */
