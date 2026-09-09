@@ -26,6 +26,30 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
   const [shareError, setShareError] = useState(null)
   // true assim que algo muda (recorte, zoom, formato ou contato) depois da última imagem gerada
   const [dirty, setDirty] = useState(true)
+  const [linkCopied, setLinkCopied] = useState(false)
+
+  async function handleCopyLink() {
+    const url = getPetUrl(pet.id)
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url)
+      } else {
+        // Fallback pra navegadores/contextos sem Clipboard API (ex: http não-seguro)
+        const textarea = document.createElement('textarea')
+        textarea.value = url
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        textarea.remove()
+      }
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    } catch {
+      setError('Não foi possível copiar o link. Copie manualmente: ' + url)
+    }
+  }
 
   function handleFormatChange(id) {
     setFormatId(id)
@@ -97,10 +121,16 @@ function ShareCard({ pet, title = 'Compartilhe nas redes', subtitle, continueLab
     <div className="mx-auto max-w-[420px] pb-4 pt-2 text-center">
       {subtitle && <div className="mb-2 text-sm font-semibold text-terracotta">{subtitle}</div>}
       <h1 className="mb-3 font-display text-2xl text-blue-deep">{title}</h1>
-      <p className="mb-6 text-[14.5px] text-ink-soft">
+      <p className="mb-5 text-[14.5px] text-ink-soft">
         Uma imagem prontinha pra postar no Instagram, Facebook ou WhatsApp — mais gente vê, mais rápido{' '}
         {pet.name} encontra um lar.
       </p>
+
+      <Button variant="ghost" onClick={handleCopyLink} className="mb-6 w-full">
+        {linkCopied ? '🔗 Link copiado!' : '🔗 Copiar link do anúncio'}
+      </Button>
+
+      <p className="mb-3 text-[13px] font-semibold text-ink-soft">Ou gere uma imagem pra compartilhar:</p>
 
       <div className="mb-5 flex flex-wrap justify-center gap-2">
         {SHARE_FORMATS.map((f) => (

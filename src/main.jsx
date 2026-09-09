@@ -7,6 +7,7 @@ import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { FavoritesProvider } from './context/FavoritesContext.jsx'
 import { ProfileProvider } from './context/ProfileContext.jsx'
+import { NotificationsProvider } from './context/NotificationsContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -15,7 +16,9 @@ createRoot(document.getElementById('root')).render(
         <AuthProvider>
           <ProfileProvider>
             <FavoritesProvider>
-              <App />
+              <NotificationsProvider>
+                <App />
+              </NotificationsProvider>
             </FavoritesProvider>
           </ProfileProvider>
         </AuthProvider>

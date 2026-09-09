@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import Container from '../components/Container'
 import Button from '../components/Button'
@@ -16,12 +16,14 @@ import { useAuth } from '../context/useAuth'
 import { useFavorites } from '../context/useFavorites'
 import { listInterestedUsers, registerInterest } from '../lib/interests'
 import { getReview, getUserRatingSummary, submitReview } from '../lib/reviews'
+import { createReviewReminder, deleteReviewReminder } from '../lib/notifications'
 import { getPublicProfile } from '../lib/users'
 import { isAdmin } from '../lib/admin'
 
 function PetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const { favoriteIds, toggleFavorite } = useFavorites()
   const [pet, setPet] = useState(null)
@@ -106,6 +108,23 @@ function PetDetail() {
       cancelled = true
     }
   }, [pet, user])
+
+  // Deep link vindo do sino de notificação (/pet/:id?avaliar=donor_to_adopter):
+  // abre o diálogo de avaliação direto, sem precisar achar o card manualmente.
+  useEffect(() => {
+    if (!pet || !myReviewsLoaded || reviewTarget) return
+    const direction = searchParams.get('avaliar')
+    if (direction !== 'donor_to_adopter' && direction !== 'adopter_to_donor') return
+
+    const isOwner = user?.uid === pet.donorId
+    const isAdopter = Boolean(user) && user.uid === pet.adopterId
+    const canOpen =
+      (direction === 'donor_to_adopter' && isOwner && pet.adopterId && !myReviews.donor_to_adopter) ||
+      (direction === 'adopter_to_donor' && isAdopter && !myReviews.adopter_to_donor)
+
+    if (canOpen) openReviewDialog(direction)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openReviewDialog é redeclarada a cada render mas é estável o suficiente aqui
+  }, [pet, user, myReviewsLoaded, myReviews, searchParams, reviewTarget])
 
   if (loading) {
     return (
@@ -194,6 +213,14 @@ function PetDetail() {
     try {
       await updatePetStatus(pet.id, 'adotado', adopterId)
       setPet((prev) => ({ ...prev, status: 'adotado', ...(adopterId ? { adopterId } : {}) }))
+      // Cria os dois lembretes de avaliação pendente (doador e adotante) —
+      // só faz sentido quando há um adotante de verdade escolhido.
+      if (adopterId) {
+        Promise.all([
+          createReviewReminder({ petId: pet.id, petName: pet.name, direction: 'donor_to_adopter', userId: pet.donorId }),
+          createReviewReminder({ petId: pet.id, petName: pet.name, direction: 'adopter_to_donor', userId: adopterId }),
+        ]).catch(() => {})
+      }
     } finally {
       setUpdatingStatus(false)
     }
@@ -229,7 +256,7 @@ function PetDetail() {
     }
   }
 
-  async function handleReviewSubmit({ rating, comment }) {
+  async function handleReviewSubmit({ rating, comment, survey }) {
     await submitReview({
       petId: pet.id,
       fromUserId: user.uid,
@@ -237,8 +264,11 @@ function PetDetail() {
       direction: reviewTarget.direction,
       rating,
       comment,
+      survey,
     })
-    setMyReviews((prev) => ({ ...prev, [reviewTarget.direction]: { rating, comment } }))
+    // A avaliação foi feita — o lembrete não tem mais razão de existir.
+    deleteReviewReminder(pet.id, reviewTarget.direction).catch(() => {})
+    setMyReviews((prev) => ({ ...prev, [reviewTarget.direction]: { rating, comment, survey } }))
     if (reviewTarget.direction === 'adopter_to_donor') {
       getUserRatingSummary(pet.donorId).then(setDonorRating)
     }
@@ -469,6 +499,7 @@ function PetDetail() {
       <ReviewDialog
         open={Boolean(reviewTarget)}
         targetName={reviewTarget?.name}
+        direction={reviewTarget?.direction}
         onSubmit={handleReviewSubmit}
         onCancel={() => setReviewTarget(null)}
       />

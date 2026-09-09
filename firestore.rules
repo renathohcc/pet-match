@@ -18,6 +18,15 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == 'vJwhGPjI6eYVyl7XAfMevNKfJHR2';
     }
 
+    // Pesquisa pós-adoção embutida na review (campo `survey`) — perguntas
+    // diferentes por direção, ver SURVEY_QUESTIONS em ReviewDialog.jsx.
+    // Só garante que as chaves obrigatórias vieram preenchidas; o texto livre
+    // (opcional) não entra aqui.
+    function hasValidSurvey(direction, survey) {
+      return (direction == 'donor_to_adopter' && survey.keys().hasAll(['facilitou', 'voltariaUsar']))
+        || (direction == 'adopter_to_donor' && survey.keys().hasAll(['correspondeuAnuncio', 'jaTinhaPet', 'experiencia']));
+    }
+
     function hasValidPetShape(data) {
       return data.keys().hasAll(['name', 'species', 'size', 'sex', 'city', 'status', 'donorId', 'createdAt'])
         && data.name is string && data.name.size() > 0 && data.name.size() <= 60
@@ -78,6 +87,7 @@ service cloud.firestore {
         && request.resource.data.fromUserId == request.auth.uid
         && request.resource.data.rating is int
         && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && hasValidSurvey(request.resource.data.direction, request.resource.data.survey)
         && (
           (request.resource.data.direction == 'donor_to_adopter'
             && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.donorId == request.auth.uid
@@ -121,6 +131,28 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow create: if isSignedIn() && request.resource.data.reportedBy == request.auth.uid;
       allow update: if false;
+    }
+
+    // "Avaliação pendente" — não some até a review correspondente ser criada
+    // (aí sim é apagada, ver deleteReviewReminder). Só o doador, no momento
+    // de marcar o pet como adotado, pode criar o par (uma pra si, uma pro
+    // adotante); só o próprio destinatário lê/apaga a sua.
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if isSignedIn()
+        && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.donorId == request.auth.uid
+        && get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.status == 'adotado'
+        && (
+          (request.resource.data.direction == 'donor_to_adopter'
+            && request.resource.data.userId == request.auth.uid)
+          ||
+          (request.resource.data.direction == 'adopter_to_donor'
+            && request.resource.data.userId == get(/databases/$(database)/documents/pets/$(request.resource.data.petId)).data.adopterId)
+        );
+
+      allow update: if false;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }

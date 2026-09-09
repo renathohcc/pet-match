@@ -10,7 +10,7 @@ export function getReviewId(petId, direction) {
   return `${petId}_${direction}`
 }
 
-export async function submitReview({ petId, fromUserId, toUserId, direction, rating, comment }) {
+export async function submitReview({ petId, fromUserId, toUserId, direction, rating, comment, survey }) {
   await setDoc(doc(db, 'reviews', getReviewId(petId, direction)), {
     petId,
     fromUserId,
@@ -18,6 +18,7 @@ export async function submitReview({ petId, fromUserId, toUserId, direction, rat
     direction,
     rating,
     comment: comment || '',
+    survey: survey || {},
     createdAt: serverTimestamp(),
   })
 }

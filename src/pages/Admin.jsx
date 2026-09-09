@@ -29,6 +29,36 @@ function StatCard({ label, value }) {
   )
 }
 
+// Rótulos amigáveis pra exibir as respostas da pesquisa pós-adoção (ver
+// SURVEY_QUESTIONS em src/components/ReviewDialog.jsx — mantidos em sincronia).
+const SURVEY_LABELS = {
+  facilitou: 'O PetMatch facilitou encontrar um adotante?',
+  voltariaUsar: 'Voltaria a usar o PetMatch?',
+  processoLivre: 'Sobre o processo',
+  correspondeuAnuncio: 'O pet correspondia ao anúncio?',
+  jaTinhaPet: 'Já tinha outro pet em casa?',
+  experiencia: 'Costume de ter animais',
+}
+
+function SurveyAnswers({ survey }) {
+  const entries = Object.entries(survey ?? {}).filter(([, value]) => value)
+  if (entries.length === 0) return null
+
+  return (
+    <div className="mt-2.5 rounded-lg bg-cream-2 p-3 text-[12.5px]">
+      <div className="mb-1.5 font-semibold text-ink-soft">Pesquisa pós-adoção:</div>
+      <dl className="flex flex-col gap-1">
+        {entries.map(([key, value]) => (
+          <div key={key}>
+            <dt className="inline text-ink-soft">{SURVEY_LABELS[key] ?? key}: </dt>
+            <dd className="inline font-medium text-ink">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  )
+}
+
 function MetricsTab() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -154,6 +184,7 @@ function ReviewsTab() {
             <Stars rating={r.rating} />
           </div>
           {r.comment && <p className="mt-2 text-[13.5px] text-ink-soft">{r.comment}</p>}
+          <SurveyAnswers survey={r.survey} />
           <div className="mt-2.5 flex items-center justify-between gap-2">
             <Link to={`/pet/${r.petId}`} className="text-[12px] text-blue-mid hover:underline">
               Ver pet

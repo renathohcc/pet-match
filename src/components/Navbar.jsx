@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom'
 import Button from './Button'
 import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
+import { useNotifications } from '../context/useNotifications'
 import { isAdmin } from '../lib/admin'
 
 const navLinks = [
@@ -10,10 +11,18 @@ const navLinks = [
   { to: '/buscar', label: 'Encontrar um pet' },
 ]
 
+function reminderText(n) {
+  return n.direction === 'donor_to_adopter'
+    ? `Avalie sua experiência com quem adotou ${n.petName}`
+    : `Avalie sua experiência com quem doou ${n.petName}`
+}
+
 function Navbar() {
   const { user, logout } = useAuth()
   const { profile } = useProfile()
+  const { notifications } = useNotifications()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
 
   return (
     <nav className="relative mx-auto flex max-w-[1180px] items-center justify-between px-7 py-5">
@@ -71,6 +80,44 @@ function Navbar() {
             Cadastrar pet
           </Button>
         </span>
+
+        {user && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setNotifOpen((v) => !v)}
+              aria-label={notifications.length > 0 ? `${notifications.length} avaliação(ões) pendente(s)` : 'Notificações'}
+              aria-expanded={notifOpen}
+              className="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-white text-lg text-blue-deep"
+            >
+              🔔
+              {notifications.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-terracotta px-1 text-[10px] font-bold text-white">
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 top-full z-40 mt-2 w-[280px] rounded-xl border border-line bg-white p-2 shadow-[0_12px_28px_rgba(22,50,79,.14)]">
+                {notifications.length === 0 ? (
+                  <p className="px-2.5 py-3 text-center text-[13px] text-ink-soft">Nenhuma pendência por aqui. 🎉</p>
+                ) : (
+                  notifications.map((n) => (
+                    <Link
+                      key={n.id}
+                      to={`/pet/${n.petId}?avaliar=${n.direction}`}
+                      onClick={() => setNotifOpen(false)}
+                      className="block rounded-lg px-2.5 py-2.5 text-[13.5px] text-ink hover:bg-cream-2"
+                    >
+                      ⭐ {reminderText(n)}
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <button
           type="button"
