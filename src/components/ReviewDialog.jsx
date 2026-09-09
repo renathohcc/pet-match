@@ -19,22 +19,15 @@ const SURVEY_QUESTIONS = {
   ],
 }
 
-const FREE_TEXT_FIELD = {
-  donor_to_adopter: { key: 'processoLivre', label: 'Quer contar algo sobre como foi o processo? (opcional)' },
-  adopter_to_donor: null,
-}
-
 function ReviewDialog({ open, targetName, direction, onSubmit, onCancel }) {
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [comment, setComment] = useState('')
   const [survey, setSurvey] = useState({})
-  const [freeText, setFreeText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
   const questions = SURVEY_QUESTIONS[direction] ?? []
-  const freeTextField = FREE_TEXT_FIELD[direction]
 
   function setAnswer(key, value) {
     setSurvey((prev) => ({ ...prev, [key]: value }))
@@ -53,8 +46,7 @@ function ReviewDialog({ open, targetName, direction, onSubmit, onCancel }) {
     setSubmitting(true)
     setError(null)
     try {
-      const surveyData = freeTextField ? { ...survey, [freeTextField.key]: freeText } : survey
-      await onSubmit({ rating, comment, survey: surveyData })
+      await onSubmit({ rating, comment, survey })
     } catch {
       setError('Não foi possível enviar a avaliação agora. Tente novamente.')
       setSubmitting(false)
@@ -111,17 +103,6 @@ function ReviewDialog({ open, targetName, direction, onSubmit, onCancel }) {
               </div>
             </div>
           ))}
-          {freeTextField && (
-            <div>
-              <label className="mb-2 block text-[13.5px] font-medium text-ink">{freeTextField.label}</label>
-              <textarea
-                value={freeText}
-                onChange={(e) => setFreeText(e.target.value)}
-                className="w-full rounded-[10px] border-[1.4px] border-line bg-white px-3.5 py-3 font-sans text-[14.5px] text-ink"
-                rows={2}
-              />
-            </div>
-          )}
         </div>
       )}
 

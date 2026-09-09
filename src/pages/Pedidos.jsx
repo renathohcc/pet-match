@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -29,6 +29,7 @@ const MY_STATUS_LABEL = {
 function Pedidos() {
   const { user } = useAuth()
   const { profile } = useProfile()
+  const navigate = useNavigate()
 
   const [received, setReceived] = useState([])
   const [receivedLoading, setReceivedLoading] = useState(true)
@@ -175,6 +176,9 @@ function Pedidos() {
             }),
             deleteAdoptionConfirmRequestNotification(interest.petId, user.uid),
           ]).catch(() => {})
+          // Já emenda pra avaliação — a pessoa acabou de confirmar a adoção,
+          // não faz sentido pedir pra ela achar o botão de avaliar depois.
+          navigate(`/pet/${interest.petId}?avaliar=adopter_to_donor`)
         } finally {
           setUpdatingUid(null)
           setConfirmAction(null)
