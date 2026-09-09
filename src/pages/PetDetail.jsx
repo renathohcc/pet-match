@@ -34,9 +34,13 @@ function PetDetail() {
 
   const [adopterPicker, setAdopterPicker] = useState(null) // { interestedUsers: [] } | null
   const [donorRating, setDonorRating] = useState({ average: 0, count: 0 })
+  const [donorRatingLoading, setDonorRatingLoading] = useState(true)
   const [adopterName, setAdopterName] = useState('')
   const [reviewTarget, setReviewTarget] = useState(null) // { uid, name, direction } | null
   const [myReviews, setMyReviews] = useState({ donor_to_adopter: null, adopter_to_donor: null })
+  // Só sabemos se "pode avaliar" depois que myReviews carrega — sem isso o
+  // botão "⭐ Avaliar" pisca aparecendo e sumindo pra quem já avaliou.
+  const [myReviewsLoaded, setMyReviewsLoaded] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -61,11 +65,16 @@ function PetDetail() {
   }, [id])
 
   useEffect(() => {
-    if (!pet) return
+    if (!pet) return undefined
     let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- feedback imediato de loading da nota do doador
+    setDonorRatingLoading(true)
 
     getUserRatingSummary(pet.donorId).then((summary) => {
-      if (!cancelled) setDonorRating(summary)
+      if (!cancelled) {
+        setDonorRating(summary)
+        setDonorRatingLoading(false)
+      }
     })
 
     // Perfil do adotante só é lido se tiver alguém logado (a rule de `users`
@@ -80,11 +89,17 @@ function PetDetail() {
     }
 
     if (pet.status === 'adotado' && pet.adopterId && user) {
+      setMyReviewsLoaded(false)
       Promise.all([getReview(pet.id, 'donor_to_adopter'), getReview(pet.id, 'adopter_to_donor')]).then(
         ([donorToAdopter, adopterToDonor]) => {
-          if (!cancelled) setMyReviews({ donor_to_adopter: donorToAdopter, adopter_to_donor: adopterToDonor })
+          if (!cancelled) {
+            setMyReviews({ donor_to_adopter: donorToAdopter, adopter_to_donor: adopterToDonor })
+            setMyReviewsLoaded(true)
+          }
         }
       )
+    } else {
+      setMyReviewsLoaded(true)
     }
 
     return () => {
@@ -137,8 +152,8 @@ function PetDetail() {
   const isFavorite = favoriteIds.includes(pet.id)
 
   const canReviewAdopter =
-    isOwner && pet.status === 'adotado' && pet.adopterId && !myReviews.donor_to_adopter
-  const canReviewDonor = isAdopter && pet.status === 'adotado' && !myReviews.adopter_to_donor
+    isOwner && pet.status === 'adotado' && pet.adopterId && myReviewsLoaded && !myReviews.donor_to_adopter
+  const canReviewDonor = isAdopter && pet.status === 'adotado' && myReviewsLoaded && !myReviews.adopter_to_donor
 
   function handleFavoriteClick() {
     if (!user) {
@@ -379,7 +394,11 @@ function PetDetail() {
                     {pet.contactName}
                   </Link>
                   <div className="text-[13px] text-ink-soft">{pet.contactType}</div>
-                  <RatingBadge average={donorRating.average} count={donorRating.count} />
+                  {donorRatingLoading ? (
+                    <span className="text-[13px] text-ink-soft">Carregando avaliações...</span>
+                  ) : (
+                    <RatingBadge average={donorRating.average} count={donorRating.count} />
+                  )}
                 </div>
               </div>
               <Button variant="whatsapp" className="mb-2.5 w-full" onClick={handleWhatsAppClick}>

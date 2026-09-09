@@ -109,10 +109,6 @@ function ReviewsTab() {
   const [loading, setLoading] = useState(true)
   const [confirmTarget, setConfirmTarget] = useState(null)
 
-  useEffect(() => {
-    loadReviews()
-  }, [])
-
   function loadReviews() {
     setLoading(true)
     listAllReviews().then(async (list) => {
@@ -127,10 +123,19 @@ function ReviewsTab() {
     })
   }
 
-  async function handleDelete() {
-    await deleteReview(confirmTarget.petId, confirmTarget.direction)
-    setConfirmTarget(null)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial da lista
     loadReviews()
+  }, [])
+
+  async function handleDelete() {
+    const target = confirmTarget
+    await deleteReview(target.petId, target.direction)
+    // Atualização otimista: remove só o item excluído da lista local em vez
+    // de refazer todo o ciclo de N+1 (listAllReviews + getPublicProfile por
+    // review) de novo.
+    setReviews((prev) => prev.filter((r) => !(r.petId === target.petId && r.direction === target.direction)))
+    setConfirmTarget(null)
   }
 
   if (loading) return <p className="text-ink-soft">Carregando avaliações...</p>
@@ -182,10 +187,6 @@ function DisputesTab() {
   const [loading, setLoading] = useState(true)
   const [confirmAction, setConfirmAction] = useState(null) // { type: 'reject' | 'uphold', dispute } | null
 
-  useEffect(() => {
-    loadDisputes()
-  }, [])
-
   function loadDisputes() {
     setLoading(true)
     listAllDisputes().then(async (list) => {
@@ -204,6 +205,11 @@ function DisputesTab() {
     })
   }
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial da lista
+    loadDisputes()
+  }, [])
+
   async function handleConfirm() {
     const { type, dispute } = confirmAction
     if (type === 'reject') {
@@ -211,8 +217,12 @@ function DisputesTab() {
     } else {
       await upholdDispute(dispute.petId, dispute.direction)
     }
+    // Nos dois casos o recurso deixa de existir (rejeitado = só o recurso
+    // some; procede = review + recurso somem) — atualização otimista local
+    // em vez de refazer o N+1 (listAllDisputes + 3x getPublicProfile por
+    // recurso) inteiro de novo.
+    setDisputes((prev) => prev.filter((d) => !(d.petId === dispute.petId && d.direction === dispute.direction)))
     setConfirmAction(null)
-    loadDisputes()
   }
 
   if (loading) return <p className="text-ink-soft">Carregando recursos...</p>
@@ -276,10 +286,6 @@ function ReportsTab() {
   const [loading, setLoading] = useState(true)
   const [confirmTarget, setConfirmTarget] = useState(null)
 
-  useEffect(() => {
-    loadReports()
-  }, [])
-
   function loadReports() {
     setLoading(true)
     listAllReports().then(async (list) => {
@@ -294,10 +300,16 @@ function ReportsTab() {
     })
   }
 
-  async function handleResolve() {
-    await resolveReport(confirmTarget.id)
-    setConfirmTarget(null)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial da lista
     loadReports()
+  }, [])
+
+  async function handleResolve() {
+    const target = confirmTarget
+    await resolveReport(target.id)
+    setReports((prev) => prev.filter((r) => r.id !== target.id))
+    setConfirmTarget(null)
   }
 
   if (loading) return <p className="text-ink-soft">Carregando denúncias...</p>
