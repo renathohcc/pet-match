@@ -4,7 +4,7 @@
 **Escopo:** segurança da plataforma, proteção dos dados dos usuários e sistemas anti-fraude.
 **Base de código analisada:** frontend React + Vite, `firestore.rules`, `.github/workflows/deploy.yml`, `scripts/`, integração Cloudinary.
 
-> Documento de diagnóstico + roadmap. **Progresso (2026-09-09):** S1 ✅ · S2 ✅ · S3 ✅ (rate limiting, App Check com reCAPTCHA Enterprise + enforcement aplicado, pós-moderação, hardening do Cloudinary — tudo em prod). S4 pendente.
+> Documento de diagnóstico + roadmap. **Progresso:** S1 ✅ · S2 ✅ · S3 ✅ (2026-09-09) · **S4a ✅** endurecimento técnico — CSP, lint gate, Dependabot, `.nvmrc`, `list` de `users`/`reviews` restrito (2026-09-10). **S4b (LGPD)** pendente.
 >
 > **Nota:** o workflow `firestore-rules.yml` ficou com 403 (`firebaserules`) da S1 até 2026-09-09 — as regras S1/S2 só entraram em prod quando publicadas manualmente pelo console nesse dia. Corrigido dando o papel *Firebase Rules Admin* à service account de CI; o CI publica sozinho desde então.
 
@@ -141,11 +141,16 @@ Perder a conta Google `vJwhGPjI6eYVyl7XAfMevNKfJHR2` (perda de acesso, suspensã
 - **A1 / M1 (Cloudinary)** ✅ parcial — preset `petmatch_pets`: **Allowed formats** = `jpg,png,webp`; **incoming transformation** `c_limit,w_2000,h_2000,q_auto:good` (re-encoda no upload → **descarta EXIF/GPS**, resolve M1, e limita a 2000px). Residual: campo "Max file size" não existe nessa versão do console — mitigado pela transformação (uploads grandes são reduzidos na ingestão). Pasta não travada de propósito (o app usa `pets` e `profiles` no mesmo preset).
 - **M3 (dedup de repost)** — não feito nesta fase (optou-se por pós-moderação em vez do bloqueio por `donorId`+`name`+`city`). Reavaliar se aparecer spam de repost.
 
-### Fase S4 — Conformidade e endurecimento de plataforma
-- **B4** — Página de Política de Privacidade + Termos de Uso (LGPD); consentimento explícito no onboarding; mecanismo de exclusão de conta/dados.
-- **M4** — CSP via `<meta http-equiv="Content-Security-Policy">` no `index.html` (limitar `script-src`, `img-src` a Cloudinary + Google, `connect-src` a Firebase); `referrer-policy`. Limitar `og:description` a um resumo neutro em vez de `pet.story` cru.
-- **M5 / M6** — `npm run lint` como porta no `deploy.yml`; suíte mínima de testes das regras (emulador + `@firebase/rules-unit-testing`); Dependabot; `.nvmrc`; verificar/pinar `react-helmet-async`.
-- **M7** — Substituir `listAllUsers` / `listAllReviews` por consultas paginadas e restringir a leitura coletiva a admin nas regras; telas públicas usam só `getPublicProfile` / consultas escopadas.
+### Fase S4a — Endurecimento técnico ✅ (2026-09-10)
+- **M4** ✅ — CSP + `referrer-policy` injetados no `index.html` **só no build de produção** (plugin `contentSecurityPolicy()` em `vite.config.js`; dev fica livre pro HMR). `script-src` sem `'unsafe-inline'` — o script inline de redirect SPA entra por hash sha256. `connect-src`/`img-src`/`frame-src` restritos a Firebase + Google (auth/App Check) + Cloudinary + Unsplash; `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`. `og:description`/`description` do pet agora é resumo de 1 linha ≤ 160 chars (não `pet.story` cru).
+- **M5** ✅ — `npm run lint` roda antes do build no `deploy.yml` (regressão de lint barra o deploy).
+- **M6** ✅ — `.nvmrc` (node 20) + `.github/dependabot.yml` (npm + github-actions, semanal, patch/minor agrupados). `react-helmet-async@3.0.0`: fica como está por ora — trocar pela 2.x ou pelo fork mantido é tarefa própria (ver pendências).
+- **M7** ✅ — `users`: `get` público, `list` só admin (blinda PII futura + dump de perfis). `reviews`: `get` público, `list` público só com `limit <= 200` (varredura sem teto = só admin); `getUserRatingSummary` e `listAllReviews` passaram a mandar `limit`.
+
+### Fase S4b — LGPD (pendente)
+- **B4** — Página de Política de Privacidade + Termos de Uso; consentimento explícito no onboarding; exclusão de conta.
+  - Decisões tomadas: controlador = **pessoa física** (falta e-mail de privacidade); exclusão = **parcial no cliente** (apaga perfil/pets disponíveis/interesses) **+ pedido de erasure completo pro admin**.
+- Testes de regras (emulador + `@firebase/rules-unit-testing`) — não feito; recomendável antes da próxima mudança grande de regras.
 
 ---
 

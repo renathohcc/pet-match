@@ -170,11 +170,12 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Leitura totalmente pública: a página /usuario/:uid (nome, foto, tipo
-      // de tutor, avaliações) precisa funcionar até pra visitante deslogado,
-      // já que reviews também são públicas. Nada aqui é mais sensível do que
-      // o que já é exposto via contactName do pet.
-      allow read: if true;
+      // `get` de um perfil é público (página /usuario/:uid funciona deslogado).
+      // Mas `list` (varrer a coleção inteira) é só admin — impede dump de
+      // todos os perfis de uma vez e blinda qualquer campo pessoal que venha
+      // a ser adicionado aqui no futuro.
+      allow get: if true;
+      allow list: if isAdmin();
 
       // `write` dividido em create/update (nunca delete — apagar o próprio
       // doc quebra referências em pets/reviews). Ambos com shape validado.
@@ -266,7 +267,10 @@ service cloud.firestore {
     // Imutável depois de criada (sem update/delete) e pública (reforça
     // confiança de quem está decidindo contatar um doador).
     match /reviews/{reviewId} {
-      allow read: if true;
+      // `get` público (uma avaliação específica). `list` público só com teto
+      // — varredura sem limite é só admin (evita slurp da coleção inteira).
+      allow get: if true;
+      allow list: if isAdmin() || request.query.limit <= 200;
 
       allow create: if isSignedIn()
         && request.resource.data.fromUserId == request.auth.uid

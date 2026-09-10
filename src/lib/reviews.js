@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, where, writeBatch } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, where, writeBatch } from 'firebase/firestore'
 import { db } from './firebase'
 import { getPublicProfile } from './users'
 import { getPetById } from './pets'
@@ -31,9 +31,14 @@ export async function getReview(petId, direction) {
   return snapshot.exists() ? snapshot.data() : null
 }
 
+// As queries de lista de `reviews` precisam de um limite (a regra exige — só
+// admin pode listar sem teto). Ninguém realista passa desses números.
+const RATING_SUMMARY_MAX = 100
+const ALL_REVIEWS_MAX = 200
+
 /** Média + lista de avaliações recebidas por um usuário (como doador ou adotante). */
 export async function getUserRatingSummary(uid) {
-  const q = query(collection(db, 'reviews'), where('toUserId', '==', uid))
+  const q = query(collection(db, 'reviews'), where('toUserId', '==', uid), limit(RATING_SUMMARY_MAX))
   const snapshot = await getDocs(q)
   const reviews = snapshot.docs.map((d) => d.data())
 
@@ -43,9 +48,9 @@ export async function getUserRatingSummary(uid) {
   return { average, count: reviews.length, reviews }
 }
 
-/** Todas as avaliações do site, mais recentes primeiro — usado no painel admin. */
-export async function listAllReviews() {
-  const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'))
+/** Avaliações mais recentes — usado no painel admin e (com teto menor) nos depoimentos da Home. */
+export async function listAllReviews(max = ALL_REVIEWS_MAX) {
+  const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'), limit(max))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
@@ -56,7 +61,7 @@ export async function listAllReviews() {
  * Enriquece com nome/foto de quem avaliou e o pet mencionado.
  */
 export async function listHomeTestimonials(max = 3) {
-  const reviews = await listAllReviews()
+  const reviews = await listAllReviews(60)
 
   const candidates = reviews
     .filter(

@@ -348,7 +348,10 @@ function PetDetail() {
   }
 
   const pageTitle = `${pet.name} — ${pet.species === 'cão' ? 'Cão' : 'Gato'} para adoção em ${pet.city} · Adota.THE`
-  const pageDescription = pet.story || `${pet.name} está esperando por um lar em ${pet.city}. Adoção responsável, sem intermediários.`
+  // `pet.story` é texto livre do doador — no preview de link ele vira só um
+  // resumo curto de uma linha (limita spoofing/spam em compartilhamentos).
+  const fallbackDescription = `${pet.name} está esperando por um lar em ${pet.city}. Adoção responsável, sem intermediários.`
+  const pageDescription = (pet.story || '').replace(/\s+/g, ' ').trim().slice(0, 160) || fallbackDescription
   const pageUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   return (
