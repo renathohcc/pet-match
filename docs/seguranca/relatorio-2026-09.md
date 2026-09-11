@@ -152,7 +152,7 @@ Perder a conta Google `vJwhGPjI6eYVyl7XAfMevNKfJHR2` (perda de acesso, suspensã
 - **B4 (consentimento)** ✅ — checkbox obrigatório "Li e aceito..." no onboarding (`ProfileForm` com `requireConsent`), grava `acceptedTermsAt` no perfil.
 - **B4 (exclusão de conta)** ✅ — botão em `/perfil` (`src/lib/account.js` `deleteMyAccount()`): apaga perfil, pets não adotados + contatos, pedidos de interesse (feitos e recebidos), notificações próprias, e a conta de login (com reautenticação se necessário). Pets adotados e avaliações ficam num `deletionRequests/{uid}` pro admin concluir — nova aba **🗑️ Exclusões** no painel.
 - **Bug corrigido de passagem**: a regra de `users` da S1 (`hasValidUserShape`) não incluía `favoritePetIds`, então **favoritar pets estava quebrado em produção** desde a publicação manual da S1 (2026-09-09). Corrigido junto (campo liberado na shape).
-- Testes de regras (emulador + `@firebase/rules-unit-testing`) — ainda não feito; recomendável antes da próxima mudança grande de regras.
+- **Testes de regras** ✅ (2026-09-10) — `tests/firestore.rules.test.js` (Vitest + `@firebase/rules-unit-testing`, emulador do Firestore), 55 casos cobrindo os invariantes críticos de cada coleção (rate limiting, shape de `pets`/`users`, `reviewDisputes` restrito, dedup de `reports`, exclusão de conta, etc.). `npm run test:rules` local; `.github/workflows/firestore-rules.yml` roda a suíte **antes** de publicar — regra que quebra um invariante coberto não chega em produção.
 - `react-helmet-async@3.0.0` — ainda não trocado/verificado (ver M6).
 
 ---

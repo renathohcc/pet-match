@@ -36,3 +36,4 @@ Standard Vite project:
 - `npm run dev` — local dev server
 - `npm run build` — production build to `dist/`
 - `npm run lint` — ESLint
+- `npm run test:rules` — Security Rules test suite (`tests/firestore.rules.test.js`, Vitest + `@firebase/rules-unit-testing`) against the Firestore emulator. Requires Java (the emulator runs on the JVM). CI runs this before every rules deploy (`.github/workflows/firestore-rules.yml`) — a rule change that breaks a covered invariant never reaches prod.

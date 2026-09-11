@@ -29,6 +29,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - run: npm ci
+
+      # Roda a suíte contra o emulador ANTES de publicar — regra que quebra
+      # um invariante coberto (ver tests/firestore.rules.test.js) não vai
+      # pro ar.
+      - name: Test rules against emulator
+        run: npm run test:rules
 
       # Service account restrito (papel "Firebase Rules Admin" só) — JSON
       # inteiro guardado no secret FIREBASE_SERVICE_ACCOUNT.
