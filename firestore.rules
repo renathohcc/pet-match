@@ -55,12 +55,14 @@ service cloud.firestore {
     // gravar qualquer campo/tamanho num doc mundialmente legível
     // (impersonação via displayName, hospedagem de blob, etc).
     function hasValidUserShape(data) {
-      return data.keys().hasOnly(['displayName', 'photoURL', 'tutorType', 'onboarded'])
+      return data.keys().hasOnly(['displayName', 'photoURL', 'tutorType', 'onboarded', 'favoritePetIds', 'acceptedTermsAt'])
         && data.keys().hasAll(['displayName', 'tutorType'])
         && data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 60
         && (!data.keys().hasAny(['photoURL']) || (data.photoURL is string && data.photoURL.size() <= 500))
         && data.tutorType in ['independente', 'ong']
-        && (!data.keys().hasAny(['onboarded']) || data.onboarded is bool);
+        && (!data.keys().hasAny(['onboarded']) || data.onboarded is bool)
+        && (!data.keys().hasAny(['favoritePetIds']) || (data.favoritePetIds is list && data.favoritePetIds.size() <= 500))
+        && (!data.keys().hasAny(['acceptedTermsAt']) || data.acceptedTermsAt is timestamp);
     }
 
     // Só URLs de imagem do nosso Cloudinary (ou vazio, quando o anúncio não
@@ -185,7 +187,19 @@ service cloud.firestore {
       allow update: if isSignedIn()
         && request.auth.uid == userId
         && hasValidUserShape(request.resource.data);
-      allow delete: if false;
+      // Exclusão de conta (LGPD) — a própria pessoa apaga o próprio perfil.
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Pedido de exclusão de conta: a parte que o cliente não consegue apagar
+    // sozinho (pets adotados presos a avaliações, histórico) fica registrada
+    // aqui pro admin concluir o erasure manualmente.
+    match /deletionRequests/{uid} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.status == 'pendente';
+      allow update, delete: if isAdmin();
     }
 
     // Manifestação de interesse num pet — precisa do aceite do doador antes
@@ -240,7 +254,10 @@ service cloud.firestore {
             && request.resource.data.status in ['aceito', 'confirmado'])
         );
 
-      allow delete: if false;
+      // A pessoa apaga os próprios pedidos, e o doador apaga pedidos feitos
+      // nos anúncios dele (declutter / exclusão de conta / limpeza de órfãos).
+      allow delete: if isSignedIn()
+        && (resource.data.userId == request.auth.uid || resource.data.donorId == request.auth.uid);
     }
 
     // Contato (whatsapp) do doador de um pet — fora do doc público de
@@ -259,7 +276,8 @@ service cloud.firestore {
         && request.resource.data.whatsapp is string
         && request.resource.data.whatsapp.size() >= 8 && request.resource.data.whatsapp.size() <= 25;
 
-      allow delete: if false;
+      // Exclusão de conta / de anúncio: o doador apaga o próprio contato.
+      allow delete: if isSignedIn() && resource.data.donorId == request.auth.uid;
     }
 
     // Avaliação mútua doador<->adotante, só depois do pet marcado como

@@ -27,6 +27,8 @@ function Footer() {
               <li><Link to="/#confianca">Adoção responsável</Link></li>
               <li><Link to="/duvidas-frequentes">Dúvidas frequentes</Link></li>
               <li><Link to="/denunciar">Denunciar anúncio</Link></li>
+              <li><Link to="/privacidade">Política de Privacidade</Link></li>
+              <li><Link to="/termos">Termos de Uso</Link></li>
             </ul>
           </div>
           <div>

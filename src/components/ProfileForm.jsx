@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import Button from './Button'
 import Chip from './Chip'
 import AvatarCropDialog from './AvatarCropDialog'
@@ -18,12 +19,14 @@ function ProfileForm({
   initialPhotoURL = '',
   initialTutorType = 'independente',
   submitLabel = 'Salvar',
+  requireConsent = false,
   onSubmit,
   onCancel,
 }) {
   const [name, setName] = useState(initialName)
   const [tutorType, setTutorType] = useState(initialTutorType)
   const [photoFile, setPhotoFile] = useState(null)
+  const [consent, setConsent] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [cropSrc, setCropSrc] = useState(null)
@@ -44,6 +47,10 @@ function ProfileForm({
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (requireConsent && !consent) {
+      setError('Você precisa aceitar a Política de Privacidade e os Termos de Uso para continuar.')
+      return
+    }
     setSaving(true)
     setError(null)
 
@@ -87,6 +94,23 @@ function ProfileForm({
           ))}
         </div>
       </div>
+
+      {requireConsent && (
+        <label className="mb-4 flex items-start gap-2.5 text-[13.5px] text-ink-soft">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0"
+          />
+          <span>
+            Li e aceito a{' '}
+            <Link to="/privacidade" target="_blank" className="text-blue-mid hover:underline">Política de Privacidade</Link>{' '}
+            e os{' '}
+            <Link to="/termos" target="_blank" className="text-blue-mid hover:underline">Termos de Uso</Link>.
+          </span>
+        </label>
+      )}
 
       {error && <p className="mb-4 text-sm text-terracotta">{error}</p>}
 

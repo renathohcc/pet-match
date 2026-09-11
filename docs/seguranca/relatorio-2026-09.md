@@ -4,7 +4,7 @@
 **Escopo:** segurança da plataforma, proteção dos dados dos usuários e sistemas anti-fraude.
 **Base de código analisada:** frontend React + Vite, `firestore.rules`, `.github/workflows/deploy.yml`, `scripts/`, integração Cloudinary.
 
-> Documento de diagnóstico + roadmap. **Progresso:** S1 ✅ · S2 ✅ · S3 ✅ (2026-09-09) · **S4a ✅** endurecimento técnico — CSP, lint gate, Dependabot, `.nvmrc`, `list` de `users`/`reviews` restrito (2026-09-10). **S4b (LGPD)** pendente.
+> Documento de diagnóstico + roadmap. **Progresso:** S1 ✅ · S2 ✅ · S3 ✅ (2026-09-09) · **S4a ✅** técnico e **S4b ✅** LGPD (2026-09-10). Todas as fases do roadmap concluídas — resta só o nome do responsável na Política de Privacidade (placeholder) e itens residuais listados em cada fase.
 >
 > **Nota:** o workflow `firestore-rules.yml` ficou com 403 (`firebaserules`) da S1 até 2026-09-09 — as regras S1/S2 só entraram em prod quando publicadas manualmente pelo console nesse dia. Corrigido dando o papel *Firebase Rules Admin* à service account de CI; o CI publica sozinho desde então.
 
@@ -147,10 +147,13 @@ Perder a conta Google `vJwhGPjI6eYVyl7XAfMevNKfJHR2` (perda de acesso, suspensã
 - **M6** ✅ — `.nvmrc` (node 20) + `.github/dependabot.yml` (npm + github-actions, semanal, patch/minor agrupados). `react-helmet-async@3.0.0`: fica como está por ora — trocar pela 2.x ou pelo fork mantido é tarefa própria (ver pendências).
 - **M7** ✅ — `users`: `get` público, `list` só admin (blinda PII futura + dump de perfis). `reviews`: `get` público, `list` público só com `limit <= 200` (varredura sem teto = só admin); `getUserRatingSummary` e `listAllReviews` passaram a mandar `limit`.
 
-### Fase S4b — LGPD (pendente)
-- **B4** — Página de Política de Privacidade + Termos de Uso; consentimento explícito no onboarding; exclusão de conta.
-  - Decisões tomadas: controlador = **pessoa física** (falta e-mail de privacidade); exclusão = **parcial no cliente** (apaga perfil/pets disponíveis/interesses) **+ pedido de erasure completo pro admin**.
-- Testes de regras (emulador + `@firebase/rules-unit-testing`) — não feito; recomendável antes da próxima mudança grande de regras.
+### Fase S4b — LGPD ✅ (2026-09-10)
+- **B4 (páginas)** ✅ — [/privacidade](../../src/pages/Privacidade.jsx) e [/termos](../../src/pages/Termos.jsx), linkadas no rodapé. Controlador = pessoa física (**nome ainda por preencher** — placeholder `[nome completo do responsável]` em `Privacidade.jsx`, revisar antes de divulgar amplamente); contato `petmatchthe@gmail.com`.
+- **B4 (consentimento)** ✅ — checkbox obrigatório "Li e aceito..." no onboarding (`ProfileForm` com `requireConsent`), grava `acceptedTermsAt` no perfil.
+- **B4 (exclusão de conta)** ✅ — botão em `/perfil` (`src/lib/account.js` `deleteMyAccount()`): apaga perfil, pets não adotados + contatos, pedidos de interesse (feitos e recebidos), notificações próprias, e a conta de login (com reautenticação se necessário). Pets adotados e avaliações ficam num `deletionRequests/{uid}` pro admin concluir — nova aba **🗑️ Exclusões** no painel.
+- **Bug corrigido de passagem**: a regra de `users` da S1 (`hasValidUserShape`) não incluía `favoritePetIds`, então **favoritar pets estava quebrado em produção** desde a publicação manual da S1 (2026-09-09). Corrigido junto (campo liberado na shape).
+- Testes de regras (emulador + `@firebase/rules-unit-testing`) — ainda não feito; recomendável antes da próxima mudança grande de regras.
+- `react-helmet-async@3.0.0` — ainda não trocado/verificado (ver M6).
 
 ---
 

@@ -14,6 +14,8 @@ import DuvidasFrequentes from './pages/DuvidasFrequentes'
 import Denunciar from './pages/Denunciar'
 import Entrar from './pages/Entrar'
 import Pedidos from './pages/Pedidos'
+import Privacidade from './pages/Privacidade'
+import Termos from './pages/Termos'
 
 function App() {
   return (
@@ -41,6 +43,8 @@ function App() {
         />
         <Route path="/usuario/:uid" element={<PublicProfile />} />
         <Route path="/duvidas-frequentes" element={<DuvidasFrequentes />} />
+        <Route path="/privacidade" element={<Privacidade />} />
+        <Route path="/termos" element={<Termos />} />
         <Route path="/denunciar" element={<Denunciar />} />
         <Route path="/entrar" element={<Entrar />} />
         <Route

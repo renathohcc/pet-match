@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import Container from '../components/Container'
 import Button from '../components/Button'
 import ProfileForm from '../components/ProfileForm'
+import { serverTimestamp } from 'firebase/firestore'
 import { useAuth } from '../context/useAuth'
 import { useProfile } from '../context/useProfile'
 import { updateUserProfile } from '../lib/users'
@@ -24,7 +25,7 @@ function Entrar() {
   }, [user, profile, redirectTo, navigate])
 
   async function handleOnboardingSubmit(profileData) {
-    await updateUserProfile(user.uid, { ...profileData, onboarded: true })
+    await updateUserProfile(user.uid, { ...profileData, onboarded: true, acceptedTermsAt: serverTimestamp() })
     navigate(redirectTo, { replace: true })
   }
 
@@ -64,6 +65,7 @@ function Entrar() {
               initialPhotoURL={profile.photoURL}
               initialTutorType={profile.tutorType}
               submitLabel="Concluir e entrar →"
+              requireConsent
               onSubmit={handleOnboardingSubmit}
             />
           </div>

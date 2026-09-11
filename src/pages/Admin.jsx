@@ -11,6 +11,7 @@ import { listAllUsers, getPublicProfile, TUTOR_TYPES } from '../lib/users'
 import { getPetById, listMyPets, REPORT_HIDE_THRESHOLD, restorePetVisibility } from '../lib/pets'
 import { deleteReview, getUserRatingSummary, listAllDisputes, listAllReviews, rejectDispute, upholdDispute } from '../lib/reviews'
 import { isOpenReport, listAllReports, resolveReport, REPORT_REASONS } from '../lib/reports'
+import { listDeletionRequests, resolveDeletionRequest } from '../lib/account'
 import { useAuth } from '../context/useAuth'
 
 const TABS = [
@@ -19,6 +20,7 @@ const TABS = [
   { id: 'reviews', label: '⭐ Avaliações' },
   { id: 'disputes', label: '🚩 Recursos' },
   { id: 'reports', label: '📣 Denúncias' },
+  { id: 'deletions', label: '🗑️ Exclusões' },
 ]
 
 function StatCard({ label, value }) {
@@ -418,6 +420,78 @@ function ReportsTab() {
   )
 }
 
+function DeletionsTab() {
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [confirmTarget, setConfirmTarget] = useState(null)
+
+  function load() {
+    setLoading(true)
+    listDeletionRequests().then((list) => {
+      setRequests(list)
+      setLoading(false)
+    })
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial da lista
+    load()
+  }, [])
+
+  async function handleConfirm() {
+    await resolveDeletionRequest(confirmTarget.id)
+    setRequests((prev) => prev.filter((r) => r.id !== confirmTarget.id))
+    setConfirmTarget(null)
+  }
+
+  if (loading) return <p className="text-ink-soft">Carregando pedidos de exclusão...</p>
+  if (requests.length === 0) return <p className="text-ink-soft">Nenhum pedido de exclusão pendente. 🎉</p>
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[13px] text-ink-soft">
+        A pessoa já apagou o que dava (perfil, anúncios disponíveis, pedidos de interesse) e encerrou o login.
+        Falta remover, se existirem: os anúncios adotados listados e as avaliações ligadas a esse uid (aba
+        Avaliações). Depois, marque como concluído.
+      </p>
+      {requests.map((r) => (
+        <div key={r.id} className="rounded-xl border border-terracotta/40 bg-cream-2 p-4">
+          <div className="text-[13.5px]">
+            <strong className="text-ink">{r.displayName || 'Usuário'}</strong>
+            {r.email && <span className="text-ink-soft"> · {r.email}</span>}
+          </div>
+          <div className="mt-1 text-[12px] text-ink-soft">uid: {r.uid}</div>
+          {r.adoptedPetIds?.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2 text-[12px]">
+              {r.adoptedPetIds.map((petId) => (
+                <Link key={petId} to={`/pet/${petId}`} className="rounded-full bg-white px-2.5 py-1 text-blue-mid hover:underline">
+                  pet: {petId}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-2 text-[12px] text-ink-soft">Sem anúncios adotados pendentes.</div>
+          )}
+          <div className="mt-3 flex justify-end">
+            <Button variant="ghost" onClick={() => setConfirmTarget(r)}>
+              Marcar como concluído
+            </Button>
+          </div>
+        </div>
+      ))}
+
+      <ConfirmDialog
+        open={Boolean(confirmTarget)}
+        title="Concluir exclusão"
+        message="Confirma que já removeu o que restava (anúncios adotados e avaliações) desse uid?"
+        confirmLabel="Concluir"
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmTarget(null)}
+      />
+    </div>
+  )
+}
+
 function Admin() {
   const [tab, setTab] = useState('metrics')
 
@@ -445,6 +519,7 @@ function Admin() {
         {tab === 'reviews' && <ReviewsTab />}
         {tab === 'disputes' && <DisputesTab />}
         {tab === 'reports' && <ReportsTab />}
+        {tab === 'deletions' && <DeletionsTab />}
       </div>
     </Container>
   )
