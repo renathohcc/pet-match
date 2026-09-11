@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import Container from '../components/Container'
 
 const PRIVACY_EMAIL = 'petmatchthe@gmail.com'
-// PREENCHER antes de divulgar: nome completo do responsável (pessoa física).
-const CONTROLLER = '[nome completo do responsável]'
+const CONTROLLER = 'Renatho Henrique Campos das Chagas'
 const UPDATED = '10 de setembro de 2026'
 
 function H2({ children }) {
