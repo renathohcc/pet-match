@@ -12,30 +12,30 @@
     "test:rules": "firebase emulators:exec --project demo-adota-the --only firestore \"vitest run\""
   },
   "dependencies": {
-    "firebase": "^12.18.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-easy-crop": "^6.2.3",
+    "firebase": "^12.19.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-easy-crop": "^6.2.4",
     "react-helmet-async": "^3.0.0",
-    "react-router-dom": "^7.18.3"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
-    "autoprefixer": "^10.5.4",
-    "eslint": "^10.9.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "autoprefixer": "^10.6.1",
+    "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.4",
-    "firebase-admin": "^14.3.0",
-    "firebase-tools": "^15.30.0",
-    "globals": "^17.11.0",
-    "postcss": "^8.5.26",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "firebase-admin": "^14.5.0",
+    "firebase-tools": "^15.32.1",
+    "globals": "^17.13.0",
+    "postcss": "^8.5.29",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.2",
-    "vitest": "^5.0.0"
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
   }
 }
